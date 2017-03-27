@@ -8,18 +8,6 @@ test(t => {
   t.deepEqual([1, 2], [1, 2]);
 });
 
-//test.cb(t => {
-//  t.plan(1);
-//
-//  clusterLib._registerService("ns", "foo", "localhost:19999", 1, function(err, res) {
-//    clusterLib._getServiceLocation("ns", "foo", function(err, res) {
-//      //console.log(err, res);
-//      t.deepEqual(res, ['localhost:19999']);
-//      t.end();
-//    });
-//  });
-//});
-
 test.cb(t => {
   t.plan(1);
 

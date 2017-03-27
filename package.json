@@ -1,0 +1,25 @@
+{
+  "name": "js-cluster",
+  "version": "0.0.1",
+  "description": "Cluster management in raw Node.js",
+  "main": "cluster.js",
+  "scripts": {
+    "test": "ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/briancsparks/js-cluster.git"
+  },
+  "author": "Brian C Sparks",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/briancsparks/js-cluster/issues"
+  },
+  "homepage": "https://github.com/briancsparks/js-cluster#readme",
+  "dependencies": {
+    "sgsg": "https://github.com/briancsparks/sg/tarball/master"
+  },
+  "devDependencies": {
+    "ava": "^0.18.2"
+  }
+}

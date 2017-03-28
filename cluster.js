@@ -34,12 +34,12 @@ lib._getServiceLocation = function(redis, namespace, name, callback) {
   return redis.smembers(key, function(err, keys) {
     if (err) { return callback(err); }
     return redis.mget(keys, function(err, res) {
-      return callback(err, _.compact([res]));
+      return callback(err, _.compact(res));
     });
   });
 };
 
-lib.Service = function(namespace, host_, port_) {
+var Service = lib.Service = function(namespace, host_, port_) {
   var self = this;
 
   var host  = host_ || 'localhost';
@@ -77,6 +77,35 @@ var getServices = lib.getServices = function(serviceList, name, callback) {
     if (error) { return callback(error); }
     return callback(null, services);
   });
+};
+
+lib.Services = function(host_, port_) {
+  var self  = this;
+
+  var host  = host_ || 'localhost';
+  var port  = port_ || 6379;
+  var index = 0;
+
+  var serviceList = [];
+  self.add = function(namespace) {
+    serviceList.push(new Service(namespace, host, port));
+  };
+
+  self.getServices = function(name, callback) {
+    return getServices(serviceList, name, callback);
+  };
+
+  self.getOneService = function(name, callback) {
+    return getServices(serviceList, name, function(err, services) {
+      if (err) { return callback(err); }
+
+      if (++index >= services.length) {
+        index = 0;
+      }
+
+      return callback(null, services[index]);
+    });
+  };
 };
 
 _.each(lib, function(value, key) {

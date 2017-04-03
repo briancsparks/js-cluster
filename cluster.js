@@ -75,7 +75,7 @@ var getServices = lib.getServices = function(serviceList, name, callback) {
 
   }, function() {
     if (error) { return callback(error); }
-    return callback(null, services);
+    return callback(null, services || []);
   });
 };
 

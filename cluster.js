@@ -32,7 +32,9 @@ lib._getServiceLocation = function(redis, namespace, name, callback) {
 
   // Get all the members of the set -- all the instances of the service
   return redis.smembers(key, function(keysErr, keys) {
-    if (keysErr) { return callback(keysErr); }
+    if (keysErr)              { return callback(keysErr); }
+    if (sg.numKeys(keys) === 0)  { return callback(null, []); }
+
     return redis.mget(keys, function(err, res) {
       return callback(err, _.compact(res));
     });

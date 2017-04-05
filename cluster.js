@@ -54,6 +54,10 @@ var Service = lib.Service = function(namespace, host_, port_) {
   self.getServiceLocation = function(name, callback) {
     return lib._getServiceLocation(redis, namespace, name, callback);
   };
+
+  self.quit = function() {
+    redis.quit();
+  };
 };
 
 var getServices = lib.getServices = function(serviceList, name, callback) {
@@ -106,6 +110,17 @@ lib.Services = function(host_, port_) {
       return callback(null, services[index]);
     });
   };
+};
+
+lib.getServiceLocation = lib.gsl = function(argv, context, callback) {
+  var namespace   = sg.argvGet(argv, 'namespace,ns');
+  var name        = sg.argvGet(argv, 'name');
+  var service     = new Service(namespace, sg.argvGet(argv, 'util-host,host'), sg.argvGet(argv, 'util-port,port'));
+
+  return service.getServiceLocation(name, function(err, result) {
+    service.quit();
+    return callback(err, result);
+  });
 };
 
 _.each(lib, function(value, key) {

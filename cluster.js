@@ -27,7 +27,7 @@ lib._registerService = function(redis, namespace, name, socket, uniq, ttl, callb
   });
 };
 
-lib._getServiceLocation = function(redis, namespace, name, callback) {
+lib._getServiceLocations = function(redis, namespace, name, callback) {
   var key = lib._mkKey(namespace, name);
 
   // Get all the members of the set -- all the instances of the service
@@ -41,11 +41,15 @@ lib._getServiceLocation = function(redis, namespace, name, callback) {
   });
 };
 
-var Service = lib.Service = function(namespace, host_, port_) {
+// The old, confusing name
+lib._getServiceLocation = lib._getServiceLocations;
+
+var ServiceList = lib.ServiceList = function(namespace, host_, port_) {
   var self = this;
 
   var host  = host_ || 'localhost';
   var port  = port_ || 6379;
+  var index = 0;
 
   var redis = redisLib.createClient(port, host);
 
@@ -53,56 +57,14 @@ var Service = lib.Service = function(namespace, host_, port_) {
     return lib._registerService(redis, namespace, name, socket, uniq, ttl, callback);
   };
 
-  self.getServiceLocation = function(name, callback) {
-    return lib._getServiceLocation(redis, namespace, name, callback);
+  self.getServiceLocations = function(name, callback) {
+    return lib._getServiceLocations(redis, namespace, name, callback);
   };
 
-  self.quit = function() {
-    redis.quit();
-  };
-};
+  self.getServiceLocation = self.getServiceLocations;
 
-var getServices = lib.getServices = function(serviceList, name, callback) {
-  var services, error;
-
-  return sg.__each(serviceList, function(clusterService, nextService) {
-
-    // Once we have services, do not need to look for more
-    if (services) { return nextService(); }
-
-    return clusterService.getServiceLocation(name, function(err, results) {
-      error = error || err;
-      if (!err && results.length > 0) {
-        services = _.map(results, function(str) { return str.replace(/[/]$/g, ''); });
-      }
-
-      return nextService();
-    });
-
-  }, function() {
-    if (error) { return callback(error); }
-    return callback(null, services || []);
-  });
-};
-
-lib.Services = function(host_, port_) {
-  var self  = this;
-
-  var host  = host_ || 'localhost';
-  var port  = port_ || 6379;
-  var index = 0;
-
-  var serviceList = [];
-  self.add = function(namespace) {
-    serviceList.push(new Service(namespace, host, port));
-  };
-
-  self.getServices = function(name, callback) {
-    return getServices(serviceList, name, callback);
-  };
-
-  self.getOneService = function(name, callback) {
-    return getServices(serviceList, name, function(err, services) {
+  self.getOneServiceLocation = function(name, callback) {
+    return self.getServiceLocations(name, function(err, services) {
       if (err) { return callback(err); }
 
       if (++index >= services.length) {
@@ -112,15 +74,100 @@ lib.Services = function(host_, port_) {
       return callback(null, services[index]);
     });
   };
+
+  // Aliases
+  self.getOneService  = self.getOneServiceLocation;
+
+  self.quit = function() {
+    redis.quit();
+  };
 };
 
-lib.getServiceLocation = lib.gsl = function(argv, context, callback) {
+// The old, confusing name
+var Service = lib.Service = ServiceList;
+
+var getServiceLocations = lib.getServiceLocations = function(serviceListList, name, callback) {
+  var serviceLocations, error;
+
+  return sg.__each(serviceListList, function(serviceList, nextService) {
+
+    // Once we have serviceLocations, do not need to look for more
+    if (serviceLocations) { return nextService(); }
+
+    return serviceList.getServiceLocations(name, function(err, results) {
+      error = error || err;
+      if (!err && results.length > 0) {
+        serviceLocations = _.map(results, function(str) { return str.replace(/[/]$/g, ''); });
+      }
+
+      return nextService();
+    });
+
+  }, function() {
+    if (error) { return callback(error); }
+    return callback(null, serviceLocations || []);
+  });
+};
+
+// The old, confusing name
+var getServices = lib.getServices = getServiceLocations;
+
+lib.ServiceLists = function(host_, port_) {
+  var self  = this;
+
+  var host  = host_ || 'localhost';
+  var port  = port_ || 6379;
+  var index = 0;
+
+  var serviceListList = [];
+  self.addService = function(serviceList) {
+    serviceListList.push(serviceList);
+  };
+
+  self.add = function(namespace) {
+    self.addService(new ServiceList(namespace, host, port));
+  };
+
+  self.getServiceLocations = function(name, callback) {
+    return getServiceLocations(serviceListList, name, callback);
+  };
+
+  self.getOneServiceLocation = function(name, callback) {
+    return getServiceLocations(serviceListList, name, function(err, services) {
+      if (err) { return callback(err); }
+
+      if (++index >= services.length) {
+        index = 0;
+      }
+
+      return callback(null, services[index]);
+    });
+  };
+
+  // Aliases
+  self.getServices    = self.getServiceLocations;
+  self.getOneService  = self.getOneServiceLocation;
+
+  self.quit = function() {
+    _.each(serviceListList, function(serviceList) {
+      serviceList.quit();
+    });
+  };
+};
+
+// Alias
+lib.ServiceListList = lib.ServiceLists;
+
+// The old, confusing name
+lib.Services = lib.ServiceLists;
+
+lib.getServiceLocations = lib.gsl = function(argv, context, callback) {
   var namespace   = sg.argvGet(argv, 'namespace,ns');
   var name        = sg.argvGet(argv, 'name');
-  var service     = new Service(namespace, sg.argvGet(argv, 'util-host,host'), sg.argvGet(argv, 'util-port,port'));
+  var serviceList = new ServiceList(namespace, sg.argvGet(argv, 'util-host,host'), sg.argvGet(argv, 'util-port,port'));
 
-  return service.getServiceLocation(name, function(err, result) {
-    service.quit();
+  return serviceList.getServiceLocations(name, function(err, result) {
+    serviceList.quit();
     return callback(err, result);
   });
 };

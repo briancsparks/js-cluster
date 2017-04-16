@@ -161,7 +161,7 @@ lib.ServiceListList = lib.ServiceLists;
 // The old, confusing name
 lib.Services = lib.ServiceLists;
 
-lib.getServiceLocations = lib.gsl = function(argv, context, callback) {
+lib.serviceLocations = lib.gsl = function(argv, context, callback) {
   var namespace   = sg.argvGet(argv, 'namespace,ns');
   var name        = sg.argvGet(argv, 'name');
   var serviceList = new ServiceList(namespace, sg.argvGet(argv, 'util-host,host'), sg.argvGet(argv, 'util-port,port'));

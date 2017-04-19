@@ -1,0 +1,17 @@
+#!/bin/bash -e
+
+echo "testing GET"
+curl 'http://localhost:54321/state/instances?x=2&foo=5555'
+curl 'http://localhost:54321/event/foo?bar=baz&quzz=42'
+curl 'http://localhost:54321/gauge/fuel/44'
+
+echo "testing POST"
+curl -X POST -H "Content-Type: application/json" --data "@driver-data/state.json" 'http://localhost:54321/state/instances?x=2&foo=5555'
+curl -X POST -H "Content-Type: application/json" --data "@driver-data/event.json" 'http://localhost:54321/event/foo?bar=baz&quzz=42'
+curl -X POST -H "Content-Type: application/json" --data "@driver-data/gauge.json" 'http://localhost:54321/gauge/fuel/44'
+
+echo "testing POST with tags"
+curl -X POST -H "Content-Type: application/json" --data "@driver-data/state2.json" 'http://localhost:54321/state/instances?x=2&foo=5555'
+curl -X POST -H "Content-Type: application/json" --data "@driver-data/event2.json" 'http://localhost:54321/event/foo?bar=baz&quzz=42'
+curl -X POST -H "Content-Type: application/json" --data "@driver-data/gauge2.json" 'http://localhost:54321/gauge/fuel/44'
+

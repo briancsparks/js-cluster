@@ -1,0 +1,53 @@
+#!/usr/bin/env node
+
+/* vim: set ft=javascript: */
+
+/**
+ *
+ */
+var sg              = require('sgsg');
+var _               = sg._;
+var debug           = require('debug')('jsc-emit');
+
+var ARGV            = sg.ARGV();
+
+if (!ARGV.ns) {
+  debug('--ns=namespace is required.');
+  process.exit(1);
+}
+
+var port            = ARGV.port   || 54322;
+
+var redisParams = {host: process.env[ARGV.ns.toUpperCase()+'_UTIL_IP'], port: 6379};
+
+var redis     = require('socket.io-redis');
+var io        = require('socket.io')(port);
+var adapter   = redis(redisParams);
+
+debug('Listening on: '+port);
+
+
+//adapter.pubClient.on('error', function(error) {
+//  console.error('adapter.pubClient Error:', arguments);
+//});
+//
+//adapter.subClient.on('error', function(error) {
+//  console.error('adapter.subClient Error:', arguments);
+//});
+
+io.adapter(adapter);
+
+var x=0;
+adapter.pubClient.on('connect', function() {
+  console.log('connected to redis');
+  io.emit('info', {msg: ++x});
+  io.close();
+  io.disconnect();
+});
+
+//setInterval(function(){
+//  console.log('sending time', io.id);
+//  io.emit('info', {msg: ++x});
+//}, 1000);
+
+

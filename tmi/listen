@@ -1,0 +1,44 @@
+#!/usr/bin/env node
+
+/* vim: set ft=javascript: */
+
+/**
+ *
+ */
+var sg              = require('sgsg');
+var _               = sg._;
+var debug           = require('debug')('jsc-listen');
+
+var ARGV            = sg.ARGV();
+
+if (!ARGV.ns) {
+  debug('--ns=namespace is required.');
+  process.exit(1);
+}
+
+var socket = require('socket.io-client')('http://localhost:54321');
+
+socket.on('connect', function() {
+  debug('connected with id: '+socket.id);
+});
+
+socket.on('event', function(event) {
+  console.log('event:', event);
+});
+
+socket.on('gauge', function(gauge) {
+  console.log('gauge:', gauge);
+});
+
+socket.on('state', function(state) {
+  console.log('state:', state);
+});
+
+socket.on('info', function(msg) {
+  console.log(msg);
+});
+
+socket.on('disconnect', function() {
+  debug('disconnected');
+});
+

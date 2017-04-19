@@ -4,7 +4,7 @@
  */
 var sg              = require('sgsg');
 var _               = sg._;
-var debug           = require('debug')('jsc-webandsocket');
+var libDebug        = require('debug');
 var app             = require('express')();
 var http            = require('http').Server(app);
 var io              = require('socket.io')(http);
@@ -12,6 +12,9 @@ var ioRedis         = require('socket.io-redis');
 var urlLib          = require('url');
 var bodyParser      = require('body-parser');
 
+var debug           = libDebug('jsc-webandsocket');
+var dbgdata         = libDebug('jsc-webandsocket:data');
+var dbgconnect      = libDebug('jsc-webandsocket:connections');
 var ARGV            = sg.ARGV();
 var ns              = sg.argvGet(ARGV, 'namespace,ns');
 var utilIp          = 'localhost';
@@ -29,20 +32,20 @@ io.adapter(ioRedis(redisParams));
 
 // ---------- Handle socket.io ----------
 io.on('connection', function(socket){
-  //console.log('a user connected');
+  dbgconnect('a user connected');
 
   socket.on('event', function(evt) {
-    debug('event: ', evt);
+    dbgdata('event: ', evt);
     io.emit('event', evt);
   });
 
   socket.on('info', function(msg) {
-    debug('info: ', msg);
+    dbgdata('info: ', msg);
     io.emit('info', msg);
   });
 
   socket.on('disconnect', function() {
-    debug('disconnected');
+    dbgconnect('disconnected');
   });
 });
 
@@ -77,7 +80,7 @@ var sendEvent = function(name, value, value2) {
   data = _.extend({name:name}, value, value2 || {});
   data = sanitize(data);
 
-  debug('sending event: '+name, data);
+  dbgdata('sending event: '+name, data);
   io.emit('event', data);
 };
 
@@ -87,7 +90,7 @@ var sendGauge = function(name, value, values, values2) {
 
   data = sanitize(data);
 
-  debug('sending gauge: '+name, value, data);
+  dbgdata('sending gauge: '+name, value, data);
   io.emit('gauge', data);
 };
 
@@ -95,7 +98,7 @@ var sendState = function(name, state, state2) {
   var data = _.extend({name:name}, state, state2 || {});
   data = sanitize(data);
 
-  console.log('sending state: '+name, data);
+  dbgdata('sending state: '+name, data);
   io.emit('state', data);
 };
 
@@ -144,7 +147,7 @@ app.get('/tmi', function(req, res){
 
 var port = ARGV.port || 54321;
 http.listen(port, function(){
-  console.log('listening on *:'+port);
+  debug('listening on *:'+port);
 
   // TODO: Register service
 });

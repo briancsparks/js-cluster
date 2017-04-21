@@ -5,6 +5,7 @@
 var sg              = require('sgsg');
 var _               = sg._;
 var libDebug        = require('debug');
+var clusterLib      = require('../');
 var app             = require('express')();
 var http            = require('http').Server(app);
 var io              = require('socket.io')(http);
@@ -12,12 +13,19 @@ var ioRedis         = require('socket.io-redis');
 var urlLib          = require('url');
 var bodyParser      = require('body-parser');
 
-var debug           = libDebug('jsc-webandsocket');
-var dbgdata         = libDebug('jsc-webandsocket:data');
-var dbgconnect      = libDebug('jsc-webandsocket:connections');
+var debug           = libDebug('jsc-ws');
+var dbgdata         = libDebug('jsc-ws:data');
+var dbgconnect      = libDebug('jsc-ws:connections');
 var ARGV            = sg.ARGV();
 var ns              = sg.argvGet(ARGV, 'namespace,ns');
+
+var myIp            = process.env.MARIO_INTERNAL_IP;
+var myColor         = process.env.MARIO_COLOR;
+var myStack         = process.env.MARIO_STACK;
 var utilIp          = 'localhost';
+
+var ServiceList     = clusterLib.ServiceList;
+var myServices      = new ServiceList(['mario', myColor, myStack].join('-'), process.env.MARIO_UTIL_IP);
 
 if (ns) {
   if (process.env[ns.toUpperCase()+'_UTIL_IP']) {
@@ -149,6 +157,11 @@ var port = ARGV.port || 54321;
 http.listen(port, function(){
   debug('listening on *:'+port);
 
-  // TODO: Register service
+  // Register my service into the cluster
+  registerAsService();
+  function registerAsService() {
+    myServices.registerService('tmi_server', 'http://'+myIp+':'+port+'/parse', myIp, 4000, function(){});
+    setTimeout(registerAsService, 750);
+  }
 });
 

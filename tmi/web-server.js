@@ -47,6 +47,16 @@ io.on('connection', function(socket){
     io.emit('event', evt);
   });
 
+  socket.on('gauge', function(gauge) {
+    dbgdata('gauge: ', gauge);
+    io.emit('gauge', gauge);
+  });
+
+  socket.on('state', function(state) {
+    dbgdata('state: ', state);
+    io.emit('state', state);
+  });
+
   socket.on('info', function(msg) {
     dbgdata('info: ', msg);
     io.emit('info', msg);
@@ -160,7 +170,8 @@ http.listen(port, function(){
   // Register my service into the cluster
   registerAsService();
   function registerAsService() {
-    myServices.registerService('tmi_server', 'http://'+myIp+':'+port+'/parse', myIp, 4000, function(){});
+    myServices.registerService('tmi_server', 'http://'+myIp+':'+port+'/tmi', myIp, 4000, function(){});
+    myServices.registerService('tmi_socketio', 'http://'+myIp+':'+port, myIp, 4000, function(){});
     setTimeout(registerAsService, 750);
   }
 });

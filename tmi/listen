@@ -12,7 +12,7 @@ var debug           = require('debug')('jsc-listen');
 var ARGV            = sg.ARGV();
 
 if (!ARGV.ns) {
-  debug('--ns=namespace is required.');
+  console.error('--ns=namespace is required.');
   process.exit(1);
 }
 

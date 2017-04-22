@@ -47,6 +47,11 @@ io.on('connection', function(socket){
     io.emit('event', evt);
   });
 
+  socket.on('trace', function(evt) {
+    dbgdata('trace: ', evt);
+    io.emit('trace', evt);
+  });
+
   socket.on('gauge', function(gauge) {
     dbgdata('gauge: ', gauge);
     io.emit('gauge', gauge);
@@ -102,6 +107,14 @@ var sendEvent = function(name, value, value2) {
   io.emit('event', data);
 };
 
+var sendTrace = function(name, value, value2, value3) {
+  data = _.extend({name:name}, value, value2 || {}, value3 || {});
+  data = sanitize(data);
+
+  dbgdata('sending trace: '+name, data);
+  io.emit('trace', data);
+};
+
 var sendGauge = function(name, value, values, values2) {
   var data = _.extend({name:name, value:value}, values, values2 || {});
   data[name] = value;
@@ -132,6 +145,18 @@ app.get('/event/:name', function(req, res) {
 app.post('/event/:name', function(req, res) {
   var url = urlLib.parse(req.url, true);
   sendEvent(req.params.name, url.query, req.body || {});
+  res.end('OK');
+});
+
+app.get('/trace/:id', function(req, res) {
+  var url = urlLib.parse(req.url, true);
+  sendTrace(req.params.id, req.params, url.query);
+  res.end('OK');
+});
+
+app.post('/trace/:id', function(req, res) {
+  var url = urlLib.parse(req.url, true);
+  sendTrace(req.params.id, req.params, url.query, req.body || {});
   res.end('OK');
 });
 

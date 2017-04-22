@@ -2,8 +2,9 @@
 /**
  *  Too Much Information -- send JSON telemetry from the servers to an all-points chat.
  */
-var sg              = require('sgsg');
-var _               = sg._;
+var sg                  = require('sgsg');
+var _                   = sg._;
+var request             = sg.extlibs.superagent;
 
 var tmi = {};
 
@@ -16,6 +17,20 @@ var tmi = {};
 // ct.set(status);
 // ```
 //
+
+tmi.trace = function(who, where_) {
+  var now = _.now();
+  var where = where_;
+  if (!_.isArray(where)) {
+    where = [where];
+  }
+
+  request
+    .post('http://localhost:54321/event/'+who)
+    .send({where: where})
+    .end(function(err, res) {
+    });
+};
 
 tmi.Room = function(name_) {
   var self = this;

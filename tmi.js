@@ -27,7 +27,7 @@ tmi.trace = function(who, where_) {
 
   request
     .post('http://localhost:54321/event/'+who)
-    .send({where: where})
+    .send({where: where, trace: true})
     .end(function(err, res) {
     });
 };

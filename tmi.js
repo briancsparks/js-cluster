@@ -18,16 +18,17 @@ var tmi = {};
 // ```
 //
 
-tmi.trace = function(who, where_) {
+tmi.trace = function(who, where_, params) {
   var now = _.now();
   var where = where_;
   if (!_.isArray(where)) {
     where = [where];
   }
 
+  console.log('asdfasdfsdfasdfasdfasfasf------------------');
   request
     .post('http://localhost:54321/event/'+who)
-    .send({where: where, trace: true})
+    .send(_.extend({foo:'bar', where: where, trace: true}, params || {}))
     .end(function(err, res) {
     });
 };

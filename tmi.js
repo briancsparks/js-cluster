@@ -25,7 +25,6 @@ tmi.trace = function(who, where_, params) {
     where = [where];
   }
 
-  console.log('asdfasdfsdfasdfasdfasfasf------------------');
   request
     .post('http://localhost:54321/event/'+who)
     .send(_.extend({foo:'bar', where: where, trace: true}, params || {}))

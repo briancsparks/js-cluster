@@ -1,0 +1,115 @@
+#!/bin/bash -e
+
+[[ -n $NAMESPACE                    ]] && namespace="$NAMESPACE"
+[[ -n $MARIO_DB_IP                  ]] && db="$MARIO_DB_IP"
+[[ -n $MARIO_DB_HOSTNAME            ]] && db="$MARIO_DB_HOSTNAME"
+[[ -n $MARIO_UTIL_IP                ]] && util="$MARIO_UTIL_IP"
+[[ -n $MARIO_UTIL_HOSTNAME          ]] && util="$MARIO_UTIL_HOSTNAME"
+
+# JS_CLUSTER has precedence
+[[ -n $JS_CLUSTER_DB_IP             ]] && db="$JS_CLUSTER_DB_IP"
+[[ -n $JS_CLUSTER_DB_HOSTNAME       ]] && db="$JS_CLUSTER_DB_HOSTNAME"
+[[ -n $JS_CLUSTER_UTIL_IP           ]] && util="$JS_CLUSTER_UTIL_IP"
+[[ -n $JS_CLUSTER_UTIL_HOSTNAME     ]] && util="$JS_CLUSTER_UTIL_HOSTNAME"
+
+# The cheapest thing with high network
+instance_type="c4.xlarge"
+
+eval "$(cli-shezargs $@)"
+
+die() {
+  echo "Usage: $0 options" 2>&1
+  echo ""
+  echo "          --service=app --ip=10.13.23.91 --color=teal --key=mario_demo --instance-type=c4.xlarge --bucket-namespace=mobilewebprint" 2>&1
+  echo "          --service=app --ip=10.13.23.91 --color=teal --key=mario_demo --instance-type=t2.large  --bucket-namespace=mobilewebprint" 2>&1
+  echo ""
+  echo "  Options:"
+  echo ""
+  echo "          --dry-run"
+  echo "          --ruby"
+  echo "          --skip-ami"
+  echo "          --no-terminate"
+  echo "          --build-number=20"
+  echo "          --db=10.13.21.229"
+  echo "          --util=10.13.21.4"
+  echo "          --namespace="
+  echo "          --image-id="
+  echo ""
+  echo "  $@"
+  echo ""
+  exit 1
+}
+
+[[ -n $namespace            ]] || die "Missing --namespace"
+
+[[ -n $build_number         ]] || build_number="$(ra invoke `fn ~/dev/ ec2\.js$` getNextBuildNumber --ns=${namespace} | underscore select '.build' --outfmt=text)"
+[[ -n $image_id             ]] || image_id="xenial"
+
+[[ -n $ip                   ]] || die "Missing --ip"
+[[ -n $db                   ]] || die "Missing --db"
+[[ -n $util                 ]] || die "Missing --util"
+[[ -n $color                ]] || die "Missing --color"
+[[ -n $key                  ]] || die "Missing --key"
+[[ -n $instance_type        ]] || die "Missing --instance-type"
+[[ -n $build_number         ]] || die "Missing --build-number"
+[[ -n $bucket_namespace     ]] || die "Missing --bucket-namespace"
+[[ -n $service              ]] || die "Missing --service"
+
+run_instance_params="$run_instance_params --db=$db"
+run_instance_params="$run_instance_params --util=$util"
+run_instance_params="$run_instance_params --namespace=$namespace"
+run_instance_params="$run_instance_params --color=$color"
+run_instance_params="$run_instance_params --key=$key"
+run_instance_params="$run_instance_params --ip=${ip}"
+run_instance_params="$run_instance_params --instance-type=$instance_type"
+run_instance_params="$run_instance_params --image-id=$image_id"
+
+[[ -n $xvdf         ]] && run_instance_params="$run_instance_params --xvdf=$xvdf"
+
+# -------------------- Run Instance --------------------
+run_instance_result="/tmp/js-aws-boot-instance-$$.json"
+if [[ -z $dry_run ]]; then
+       ra invoke `fn ${script_dir}/../../ ec2\.js$` runInstance $run_instance_params --first-buildup --jsaws-boot | tee $run_instance_result | underscore print --color
+else
+  echo ra invoke `fn ${script_dir}/../../ ec2\.js$` runInstance $run_instance_params --first-buildup --jsaws-boot
+  exit 0
+fi
+
+# Get the actual IP from the result
+ip="$(cat $run_instance_result | underscore select '.InstanceId ~ .PrivateIpAddress' --outfmt=text)"
+instance_id="$(cat $run_instance_result | underscore select '.PrivateIpAddress ~ .InstanceId' --outfmt=text)"
+
+wait_for_start $ip
+
+# Copy buildout scripts
+sshix $ip 'mkdir -p zz_packages/boot zz_packages/build-logs'
+scpix -r ${script_dir}/* "${ip}:~/zz_packages/boot/"
+
+# -------------------- aa-build-all --------------------
+
+                         build_all_params="$build_all_params ${bucket_namespace} ${service} --namespace=${namespace} --stack=${stack} --service=${service}"
+[[ -n $ruby       ]] &&  build_all_params="$build_all_params --ruby"
+
+ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/boot/on-instance/aa-build-all ${build_all_params}" "--message=${service}-build"
+
+# -------------------- Create AMI ----------------------
+[[ -n $skip_ami ]] && exit 0
+
+create_ami_result="/tmp/js-aws-create-ami-$$.json"
+time ra invoke `fn ${script_dir}/../../ ec2\.js$` createAmi --instance-id=${instance_id} --description="jsaws-built" --name="jsaws-base-${build_number}-net" \
+      | tee $create_ami_result \
+      | underscore print --color
+
+image_id="$(cat $create_ami_result | underscore select '.ImageId' --outfmt=text)"
+aws ec2 create-tags --resources $image_id --tags "Key=jsaws:readyFor,Value=test"
+
+sleep 5
+wait_for_start $ip
+
+# -------------------- Terminate Instance ----------------------
+if [[ -z $no_terminate ]]; then
+  ra invoke lib/ec2/ec2.js terminateInstance --instance-id=${instance_id} | underscore print --color
+fi
+
+
+

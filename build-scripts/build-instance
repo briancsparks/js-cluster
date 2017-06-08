@@ -42,7 +42,7 @@ die() {
 
 [[ -n $namespace            ]] || die "Missing --namespace"
 
-[[ -n $build_number         ]] || build_number="$(ra invoke `fn ~/dev/ ec2\.js$` getNextBuildNumber --ns=${namespace} | underscore select '.build' --outfmt=text)"
+[[ -n $build_number         ]] || build_number="$(ra invoke `fn ~/dev/ 'lib/ec2/ec2\.js$'` getNextBuildNumber --ns=${namespace} | underscore select '.build' --outfmt=text)"
 [[ -n $image_id             ]] || image_id="xenial"
 
 [[ -n $ip                   ]] || die "Missing --ip"
@@ -67,11 +67,11 @@ run_instance_params="$run_instance_params --image-id=$image_id"
 [[ -n $xvdf         ]] && run_instance_params="$run_instance_params --xvdf=$xvdf"
 
 # -------------------- Run Instance --------------------
-run_instance_result="/tmp/js-aws-boot-instance-$$.json"
+run_instance_result="/tmp/js-cluster-boot-instance-$$.json"
 if [[ -z $dry_run ]]; then
-       ra invoke `fn ${script_dir}/../../ ec2\.js$` runInstance $run_instance_params --first-buildup --jsaws-boot | tee $run_instance_result | underscore print --color
+       ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` runInstance $run_instance_params --first-buildup --jsaws-boot | tee $run_instance_result | underscore print --color
 else
-  echo ra invoke `fn ${script_dir}/../../ ec2\.js$` runInstance $run_instance_params --first-buildup --jsaws-boot
+  echo ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` runInstance $run_instance_params --first-buildup --jsaws-boot
   exit 0
 fi
 
@@ -93,23 +93,27 @@ scpix -r ${script_dir}/* "${ip}:~/zz_packages/boot/"
 ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/boot/on-instance/aa-build-all ${build_all_params}" "--message=${service}-build"
 
 # -------------------- Create AMI ----------------------
-[[ -n $skip_ami ]] && exit 0
+if [[ -z $skip_ami ]]; then
 
-create_ami_result="/tmp/js-aws-create-ami-$$.json"
-time ra invoke `fn ${script_dir}/../../ ec2\.js$` createAmi --instance-id=${instance_id} --description="jsaws-built" --name="jsaws-base-${build_number}-net" \
-      | tee $create_ami_result \
-      | underscore print --color
+  create_ami_result="/tmp/js-cluster-create-ami-$$.json"
+  time ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` createAmi --instance-id=${instance_id} --description="jscluster-built-for ${namespace}" --name="${namespace}-base-${build_number}-net" \
+        | tee $create_ami_result \
+        | underscore print --color
 
-image_id="$(cat $create_ami_result | underscore select '.ImageId' --outfmt=text)"
-aws ec2 create-tags --resources $image_id --tags "Key=jsaws:readyFor,Value=test"
+  image_id="$(cat $create_ami_result | underscore select '.ImageId' --outfmt=text)"
+  aws ec2 create-tags --resources $image_id --tags "Key=${namespace}:readyFor,Value=test"
 
-sleep 5
-wait_for_start $ip
+  sleep 5
+  wait_for_start $ip
 
-# -------------------- Terminate Instance ----------------------
-if [[ -z $no_terminate ]]; then
-  ra invoke lib/ec2/ec2.js terminateInstance --instance-id=${instance_id} | underscore print --color
+  # -------------------- Terminate Instance ----------------------
+  if [[ -z $no_terminate ]]; then
+    ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` terminateInstance --instance-id=${instance_id} | underscore print --color
+    exit "$?"
+  fi
 fi
 
-
+# -------------------- Startup Services ----------------------
+ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/boot/on-instance/b01-start-from-snapshot" "--message=${service}-build"
+ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/boot/on-instance/b02-start-services" "--message=${service}-build"
 

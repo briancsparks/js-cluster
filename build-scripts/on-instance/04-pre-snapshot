@@ -1,0 +1,7 @@
+#!/bin/bash -e
+
+eval "$(cli-shezargs $@)"
+
+# Restore /etc/environment (remove vars, leave PATH)
+grep '^PATH' /etc/environment | sudo tee /etc/environment
+

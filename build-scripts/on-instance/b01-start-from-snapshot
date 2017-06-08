@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+#
+# The scripts 01 - 0X were run to build an instance; then an AMI was created.
+#
+# An instance was just created from that AMI, and this script must build the
+# environment for this instances new 'location' within the cluster.
+#
+
+eval "$(cli-shezargs $@)"
+
+

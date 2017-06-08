@@ -1,0 +1,44 @@
+#!/bin/bash -e
+
+eval "$(cli-shezargs $@)"
+
+# ---------- Dotfiles ----------
+if jsaws-build-block "dotfiles" "Installing dotfiles"; then
+  if ! [[ -d $HOME/dotfiles ]]; then
+
+    cd
+    git clone git@github.com:briancsparks/dotfiles.git
+    cd dotfiles
+    ./setup
+    ./setupbash
+
+    sudo perl -pi -e "s/PATH=\"/PATH=\"\/home\/${username}\/dotfiles\/bin:/g" /etc/environment
+
+  fi
+
+  jsaws-build-block "dotfiles" "done"
+fi
+
+# ---------- Cli tools ----------
+if jsaws-build-block "clitools" "Installing CLI DevOps tools"; then
+
+  # ack
+  if ! [[ -f /usr/local/bin/ack ]]; then
+    curl -s -L 'http://beyondgrep.com/ack-2.10-single-file' > /tmp/ack && sudo cp /tmp/ack /usr/local/bin/ack && sudo chmod 0755 /usr/local/bin/ack
+  fi
+
+  # ag
+  if ! which ag > /dev/null; then
+    sudo apt-get install -y silversearcher-ag
+  fi
+
+  # hr
+  if ! [[ -f /usr/local/bin/hr ]]; then
+    curl -sL https://raw.githubusercontent.com/LuRsT/hr/master/hr | sudo tee /usr/local/bin/hr > /dev/null
+    sudo chmod +x /usr/local/bin/hr
+  fi
+
+  jsaws-build-block "clitools" "done"
+fi
+
+

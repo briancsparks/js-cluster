@@ -232,41 +232,41 @@ if jsaws-build-block "first-big-apt-get" "Big first apt-get"; then
   check_reboot "big initial install"
 fi
 
-# ---------- dotfiles ----------
-if [[ $service != base ]]; then
-  if jsaws-build-block "dotfiles" "Installing dotfiles"; then
-    if ! [[ -d $HOME/dotfiles ]]; then
-
-      cd
-      git clone git@github.com:briancsparks/dotfiles.git
-      cd dotfiles
-
-      ./setup
-      ./setupbash
-
-      cd
-
-      # Install ack and the silver searcher
-      curl -s -L 'http://beyondgrep.com/ack-2.10-single-file' > /tmp/ack && sudo cp /tmp/ack /usr/local/bin/ack && sudo chmod 0755 /usr/local/bin/ack
-
-      if [[ $(lsb_release -c) == precise ]]; then
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y automake pkg-config libpcre3-dev zlib1g-dev liblzma-dev
-        mkdir -p ~/zz_packages && cd $_
-        git clone https://github.com/ggreer/the_silver_searcher
-        cd the_silver_searcher
-        ./build.sh && make && sudo make install
-      else
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y silversearcher-ag
-      fi
-
-      # Install <hr> for bash
-      curl -sL https://raw.githubusercontent.com/LuRsT/hr/master/hr | sudo tee /usr/local/bin/hr > /dev/null
-      sudo chmod +x /usr/local/bin/hr
-
-    fi
-    jsaws-build-block "dotfiles" "done"
-  fi
-fi
+## ---------- dotfiles ----------
+#if [[ $service != base ]]; then
+#  if jsaws-build-block "dotfiles" "Installing dotfiles"; then
+#    if ! [[ -d $HOME/dotfiles ]]; then
+#
+#      cd
+#      git clone git@github.com:briancsparks/dotfiles.git
+#      cd dotfiles
+#
+#      ./setup
+#      ./setupbash
+#
+#      cd
+#
+#      # Install ack and the silver searcher
+#      curl -s -L 'http://beyondgrep.com/ack-2.10-single-file' > /tmp/ack && sudo cp /tmp/ack /usr/local/bin/ack && sudo chmod 0755 /usr/local/bin/ack
+#
+#      if [[ $(lsb_release -c) == precise ]]; then
+#        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y automake pkg-config libpcre3-dev zlib1g-dev liblzma-dev
+#        mkdir -p ~/zz_packages && cd $_
+#        git clone https://github.com/ggreer/the_silver_searcher
+#        cd the_silver_searcher
+#        ./build.sh && make && sudo make install
+#      else
+#        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y silversearcher-ag
+#      fi
+#
+#      # Install <hr> for bash
+#      curl -sL https://raw.githubusercontent.com/LuRsT/hr/master/hr | sudo tee /usr/local/bin/hr > /dev/null
+#      sudo chmod +x /usr/local/bin/hr
+#
+#    fi
+#    jsaws-build-block "dotfiles" "done"
+#  fi
+#fi
 
 # ---------- Admin ----------
 if env | egrep -i '_service=admin'; then

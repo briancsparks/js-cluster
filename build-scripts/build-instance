@@ -95,6 +95,8 @@ ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_p
 # -------------------- Create AMI ----------------------
 if [[ -z $skip_ami ]]; then
 
+  ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/boot/on-instance/pre-snapshot" "--message=${service}-build"
+
   create_ami_result="/tmp/js-cluster-create-ami-$$.json"
   time ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` createAmi --instance-id=${instance_id} --description="jscluster-built-for ${namespace}" --name="${namespace}-base-${build_number}-net" \
         | tee $create_ami_result \

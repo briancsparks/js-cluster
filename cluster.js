@@ -6,6 +6,8 @@ var sg              = require('sgsg');
 var _               = sg._;
 var redisLib        = require('redis');
 
+var minutes         = sg.minutes;
+
 var lib = {};
 
 var _mkKey = lib._mkKey = function(namespace, name) {
@@ -77,6 +79,28 @@ var ServiceList = lib.ServiceList = function(namespace, host_, port_) {
 
   // Aliases
   self.getOneService  = self.getOneServiceLocation;
+
+  self.waitForOneServiceLocation = function(name, def, callback) {
+    return sg.until((again, last, count, elapsed) => {
+      return self.getOneServiceLocation(name, (err, location) => {
+        if (err || !location) {
+          console.error(`Waiting for ${name} service, elapsed: ${elapsed}`);
+          if (elapsed < 30*minutes) { return again(5000); }
+
+          /* otherwise */
+          console.error(`Waited too long for ${name}, using default: ${def}`);
+          return last(def);
+        }
+
+        return last(location);
+      });
+
+    }, function(location) {
+      return callback(null, location);
+    });
+  };
+
+  self.waitForOneService = self.waitForOneServiceLocation;
 
   self.quit = function() {
     redis.quit();

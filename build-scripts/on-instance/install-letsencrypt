@@ -13,7 +13,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y certbot
 sudo mkdir -p /etc/letsencrypt/
 
 sudo mkdir -p /etc/nginx/certs
-sudo aws s3 cp s3://mobilewebprint-deploy/buildout/config/certs/mario_client_ca.crt /etc/nginx/certs/
+sudo aws s3 cp s3://mobilewebprint-deploy/buildout/config/certs/serverassist_client_ca.crt /etc/nginx/certs/
 
 mkdir -p ~/www/${sub_domain}
 #sudo certbot certonly --register-unsafely-without-email --webroot -w www/${sub_domain}/ -d ${sub_domain}.${domain}

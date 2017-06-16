@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
 [[ -n $NAMESPACE                    ]] && namespace="$NAMESPACE"
-[[ -n $MARIO_DB_IP                  ]] && db="$MARIO_DB_IP"
-[[ -n $MARIO_DB_HOSTNAME            ]] && db="$MARIO_DB_HOSTNAME"
-[[ -n $MARIO_UTIL_IP                ]] && util="$MARIO_UTIL_IP"
-[[ -n $MARIO_UTIL_HOSTNAME          ]] && util="$MARIO_UTIL_HOSTNAME"
+[[ -n $SERVERASSIST_DB_IP           ]] && db="$SERVERASSIST_DB_IP"
+[[ -n $SERVERASSIST_DB_HOSTNAME     ]] && db="$SERVERASSIST_DB_HOSTNAME"
+[[ -n $SERVERASSIST_UTIL_IP         ]] && util="$SERVERASSIST_UTIL_IP"
+[[ -n $SERVERASSIST_UTIL_HOSTNAME   ]] && util="$SERVERASSIST_UTIL_HOSTNAME"
 
 # JS_CLUSTER has precedence
 [[ -n $JS_CLUSTER_DB_IP             ]] && db="$JS_CLUSTER_DB_IP"
@@ -20,8 +20,8 @@ eval "$(cli-shezargs $@)"
 die() {
   echo "Usage: $0 options" 2>&1
   echo ""
-  echo "          --service=app --ip=10.13.23.91 --color=teal --key=mario_demo --instance-type=c4.xlarge --bucket-namespace=mobilewebprint" 2>&1
-  echo "          --service=app --ip=10.13.23.91 --color=teal --key=mario_demo --instance-type=t2.large  --bucket-namespace=mobilewebprint" 2>&1
+  echo "          --service=app --ip=10.13.23.91 --color=teal --key=serverassist_demo --instance-type=c4.xlarge --bucket-namespace=mobilewebprint" 2>&1
+  echo "          --service=app --ip=10.13.23.91 --color=teal --key=serverassist_demo --instance-type=t2.large  --bucket-namespace=mobilewebprint" 2>&1
   echo ""
   echo "  Options:"
   echo ""

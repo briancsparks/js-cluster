@@ -294,9 +294,6 @@ if env | egrep -i '_service=admin'; then
       [[ -d js-cluster   ]] || (git clone git@github.com:briancsparks/js-cluster    && cd js-cluster    && npm install --production    && npm link --production)
       [[ -d run-anywhere ]] || (git clone git@github.com:briancsparks/run-anywhere  && cd run-anywhere  && npm install --production    && npm link --production)
       [[ -d js-aws       ]] || (git clone git@github.com:briancsparks/js-aws        && cd js-aws        && npm install --production    && npm link --production)
-      [[ -d mario-js     ]] || (git clone git@github.com:IPGPTP/mario-js            && cd mario-js      && npm install --production    && npm link --production)
-
-      git clone git@github.com:IPGPTP/mario_util            mario-util
 
     fi
 

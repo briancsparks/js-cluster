@@ -65,20 +65,20 @@ if [[ -n $step1 ]]; then
   echo "---------------------- Starting admin ------------------------------------------------------------------"
   (./boot-instance --key=HQ        --ip=10.13.0.251 --instance-type=c4.xlarge --service=admin   --skip-ami ${params}) &
   echo "---------------------- Starting bastione ---------------------------------------------------------------"
-  (./boot-instance --key=mario_demo --ip=10.13.1.3  --instance-type=t2.micro --service=bastione --skip-ami ${params}) &
+  (./boot-instance --key=serverassist_demo --ip=10.13.1.3  --instance-type=t2.micro --service=bastione --skip-ami ${params}) &
 
   jobs
   wait
 
   # This version is good
   echo "---------------------- Starting bastionb ---------------------------------------------------------------"
-  (./boot-instance --key=mario_demo --ip=10.13.9.3  --instance-type=t2.micro --service=bastionb --skip-ami ${params}) &
+  (./boot-instance --key=serverassist_demo --ip=10.13.9.3  --instance-type=t2.micro --service=bastionb --skip-ami ${params}) &
   sleep 15
   echo "---------------------- Starting bastiond ---------------------------------------------------------------"
-  (./boot-instance --key=mario_demo --ip=10.13.5.3  --instance-type=t2.micro --service=bastiond --skip-ami ${params}) &
+  (./boot-instance --key=serverassist_demo --ip=10.13.5.3  --instance-type=t2.micro --service=bastiond --skip-ami ${params}) &
   sleep 15
   echo "---------------------- Starting bastiona ---------------------------------------------------------------"
-  (./boot-instance --key=mario_demo --ip=10.13.13.3 --instance-type=t2.micro --service=bastiona --skip-ami ${params}) &
+  (./boot-instance --key=serverassist_demo --ip=10.13.13.3 --instance-type=t2.micro --service=bastiona --skip-ami ${params}) &
 
   jobs
   wait
@@ -162,7 +162,7 @@ fi
 
   echo "Peering ${cluster_classb} and ${prod_classb} using ${to_pcx} -- takes about 3 minutes to create about 20 items in 2 passes"
   peer_vpcs --to-pcx=${to_pcx} --from=${cluster_classb} --to-cidr=10.${prod_classb}.0.0/16 --wait | tee /tmp/peering-cluster-to-pub.json | underscore print --color
-  peer_vpcs --to-pcx=${to_pcx} --from=${prod_classb} --to-cidr=10.${cluster_classb}.0.0/16 --wait --session=prod --acct=244406501905 --role=mario-mobilewebprint | tee /tmp/peering-pub-to-cluster.json | underscore print --color
+  peer_vpcs --to-pcx=${to_pcx} --from=${prod_classb} --to-cidr=10.${cluster_classb}.0.0/16 --wait --session=prod --acct=244406501905 --role=mobilewebassist | tee /tmp/peering-pub-to-cluster.json | underscore print --color
 
 #fi
 
@@ -215,7 +215,7 @@ fi
 
   echo "Peering ${cluster_classb} and ${prod_classb} using ${test_and_prod_pcx} -- takes about 3 minutes to create about 20 items in 2 passes"
   peer_vpcs --to-pcx=${test_and_prod_pcx} --from=${test_classb} --to-cidr=10.${prod_classb}.0.0/16 --wait | tee /tmp/peering-test-to-pub.json | underscore print --color
-  peer_vpcs --to-pcx=${test_and_prod_pcx} --from=${prod_classb} --to-cidr=10.${test_classb}.0.0/16 --wait --session=prod --acct=244406501905 --role=mario-mobilewebprint | tee /tmp/peering-pub-to-test.json | underscore print --color
+  peer_vpcs --to-pcx=${test_and_prod_pcx} --from=${prod_classb} --to-cidr=10.${test_classb}.0.0/16 --wait --session=prod --acct=244406501905 --role=mobilewebassist | tee /tmp/peering-pub-to-test.json | underscore print --color
 
   echo "Done."
   echo ''

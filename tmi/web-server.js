@@ -19,13 +19,13 @@ var dbgconnect      = libDebug('jsc-ws:connections');
 var ARGV            = sg.ARGV();
 var ns              = sg.argvGet(ARGV, 'namespace,ns');
 
-var myIp            = process.env.MARIO_INTERNAL_IP;
-var myColor         = process.env.MARIO_COLOR;
-var myStack         = process.env.MARIO_STACK;
+var myIp            = process.env.SERVERASSIST_INTERNAL_IP;
+var myColor         = process.env.SERVERASSIST_COLOR;
+var myStack         = process.env.SERVERASSIST_STACK;
 var utilIp          = 'localhost';
 
 var ServiceList     = clusterLib.ServiceList;
-var myServices      = new ServiceList(['mario', myColor, myStack].join('-'), process.env.MARIO_UTIL_IP);
+var myServices      = new ServiceList(['serverassist', myColor, myStack].join('-'), process.env.SERVERASSIST_UTIL_IP);
 
 if (ns) {
   if (process.env[ns.toUpperCase()+'_UTIL_IP']) {

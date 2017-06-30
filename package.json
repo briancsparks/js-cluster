@@ -1,6 +1,6 @@
 {
   "name": "js-cluster",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Cluster management in raw Node.js",
   "main": "cluster.js",
   "scripts": {
@@ -21,7 +21,7 @@
     "debug": "^2.6.3",
     "express": "^4.15.2",
     "redis": "^2.7.1",
-    "sgsg": "https://github.com/briancsparks/sg/tarball/master",
+    "sgsg": "^0.9.6",
     "socket.io": "^1.7.3",
     "socket.io-client": "^1.7.3",
     "socket.io-emitter": "^2.0.0",

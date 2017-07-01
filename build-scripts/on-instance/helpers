@@ -1,0 +1,50 @@
+#!/bin/bash -e
+
+username="$(whoami)"
+
+reboot() {
+  echo "Rebooting after $1"
+  sudo shutdown -r now
+  sleep 2
+  exit 253
+}
+
+check_reboot() {
+
+  # Reboot?
+  if [[ -f /var/run/reboot-required ]]; then
+    reboot "$@"
+  fi
+}
+
+set_env() {
+  # ----- /etc/environment -----
+
+  # Kill the item, if it is already in the file
+  sudo perl -ni -e "print unless /^${1}=/" /etc/environment
+
+  # Then, append it
+  echo "$1=$2" | sudo tee -a /etc/environment > /dev/null
+
+  # Finally, remove blank lines
+  sudo perl -ni -e 'print unless /^$/' /etc/environment
+
+}
+
+osversion="$(lsb_release -c | awk '{print $2}')"
+
+if [[ ${osversion} =~ xenial ]]; then
+  python_cmd="python3"
+else
+  python_cmd="python"
+fi
+
+my_keyname="$(curl -s http://169.254.169.254/latest/meta-data/public-keys/ | cut -d= -f2)"
+if [[ $my_keyname =~ prod ]]; then
+  is_prod="1"
+  unset is_dev
+else
+  is_dev="1"
+  unset is_prod
+fi
+

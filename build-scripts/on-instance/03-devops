@@ -2,6 +2,8 @@
 
 eval "$(cli-shezargs $@)"
 
+username="$(whoami)"
+
 # ---------- Dotfiles ----------
 if jsaws-build-block "dotfiles" "Installing dotfiles"; then
   if ! [[ -d $HOME/dotfiles ]]; then
@@ -12,7 +14,7 @@ if jsaws-build-block "dotfiles" "Installing dotfiles"; then
     ./setup
     ./setupbash
 
-    sudo perl -pi -e "s/PATH=\"/PATH=\"\/home\/${username}\/dotfiles\/bin:/g" /etc/environment
+    sudo perl -pi -e "s/PATH=\"/PATH=\"\/home\/$(whoami)\/dotfiles\/bin:/g" /etc/environment
 
   fi
 

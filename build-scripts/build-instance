@@ -103,7 +103,7 @@ if [[ -z $skip_ami ]]; then
         | underscore print --color
 
   image_id="$(cat $create_ami_result | underscore select '.ImageId' --outfmt=text)"
-  aws ec2 create-tags --resources $image_id --tags "Key=${namespace}:readyFor,Value=test"
+  aws ec2 create-tags --resources $image_id --tags "Key=readyFor,Value=test"
 
   sleep 5
   wait_for_start $ip

@@ -1,0 +1,113 @@
+#!/bin/bash -e
+
+eval "$(cli-shezargs $@)"
+
+if jsaws-build-block "build-mongo" "MongoDB"; then
+  if ! which mongod; then
+
+    # See: https://www.percona.com/doc/percona-server-for-mongodb/3.4/install/apt.html#apt
+    mkdir -p ~/zz_packages && cd $_
+    curl https://repo.percona.com/apt/percona-release_0.1-4.$(lsb_release -sc)_all.deb -O
+    sudo dpkg -i percona-release_0.1-4.$(lsb_release -sc)_all.deb
+    sudo apt-get update
+    sudo apt-get install -y percona-server-mongodb-34
+
+    sudo service mongod stop
+
+    # setup storage
+    sudo mkdir /data /journal /log
+
+    if [[ -b /dev/xvdf ]]; then sudo mkfs.ext4 /dev/xvdf; echo '/dev/xvdf   /data    ext4  defaults,auto,noatime,noexec,comment=cloudconfig 0 2' | sudo tee -a /etc/fstab; fi
+    if [[ -b /dev/xvdg ]]; then sudo mkfs.ext4 /dev/xvdg; echo '/dev/xvdg   /journal ext4  defaults,auto,noatime,noexec,comment=cloudconfig 0 2' | sudo tee -a /etc/fstab; fi
+    if [[ -b /dev/xvdh ]]; then sudo mkfs.ext4 /dev/xvdh; echo '/dev/xvdh   /log     ext4  defaults,auto,noatime,noexec,comment=cloudconfig 0 2' | sudo tee -a /etc/fstab; fi
+
+    sudo mount /data
+    sudo mount /journal
+    sudo mount /log
+
+    sudo chown mongod:mongod /data /journal /log
+
+    sudo ln -s /journal /data/journal
+
+    cd ~/zz_packages
+    sudo cat /etc/mongod.conf   | tee mongod.conf
+    yaml json write mongod.conf | tee mongod.json
+
+    # Config Mongo
+    cat mongod.json | jq 'del(.net.bindIp)' | \
+                      jq '.storage.dbPath="/data"' | \
+                      jq '.systemLog.path="/log/mongod.log"' \
+                          > mongodA.json && mv mongodA.json mongod.json
+
+    # RocksDB params
+    cat mongod.json | jq '.storage.engine="rocksdb"' | \
+                      jq '.storage.rocksdb.cacheSizeGB=1' | \
+                      jq '.storage.rocksdb.compression="snappy"' | \
+                      jq '.storage.rocksdb.maxWriteMBPerSec=1024' | \
+                      jq '.storage.rocksdb.crashSafeCounters=false' | \
+                      jq '.storage.rocksdb.counters=true' | \
+                      jq '.storage.rocksdb.singleDeleteIndex=false' \
+                          > mongodA.json && mv mongodA.json mongod.json
+
+    if [[ -n $replset_name ]]; then
+      # Replication
+      cat mongod.json | jq ".replication.replSetName=\"${replset_name}\"" | \
+                            > mongodA.json && mv mongodA.json mongod.json
+    fi
+
+    echo "# vim: filetype=yaml:"      | sudo tee    /etc/mongod.conf
+    echo ""                           | sudo tee -a /etc/mongod.conf
+    yaml json read mongod.json        | sudo tee -a /etc/mongod.conf
+    echo ""                           | sudo tee -a /etc/mongod.conf
+    echo "# Repla Sets"               | sudo tee -a /etc/mongod.conf
+    echo "#replication:"              | sudo tee -a /etc/mongod.conf        # (1)         (2)
+    echo "#  replSetName: rs0"        | sudo tee -a /etc/mongod.conf        # (1)         (2) -- rs0 --> configReplSet
+    echo ""                           | sudo tee -a /etc/mongod.conf
+    echo "# Sharding"                 | sudo tee -a /etc/mongod.conf
+    echo "#sharding:"                 | sudo tee -a /etc/mongod.conf        # (1)
+    echo "#  clusterRole: shardsvr"   | sudo tee -a /etc/mongod.conf        # (1)
+    echo ""                           | sudo tee -a /etc/mongod.conf
+    echo "# Sharding"                 | sudo tee -a /etc/mongod.conf
+    echo "#sharding:"                 | sudo tee -a /etc/mongod.conf                    # (2)
+    echo "#  clusterRole: configsvr"  | sudo tee -a /etc/mongod.conf                    # (2)
+    echo ""                           | sudo tee -a /etc/mongod.conf
+    echo "# Sharding -- mongos"       | sudo tee -a /etc/mongod.conf
+    echo "#sharding:"                 | sudo tee -a /etc/mongod.conf                                                                # (3)
+    echo "#  configDB: configReplSet/10.10.21.222:27019,10.10.32.222:27019,10.10.48.222:27019" | sudo tee -a /etc/mongod.conf       # (3)
+    echo ""                           | sudo tee -a /etc/mongod.conf
+
+    # sudo service mongod stop && sudo vim /etc/mongod.conf && sudo service mongod start
+
+    # (1) Turn 2 * 3 sets into replica-sets that are shards.
+    # (2) Turn 3 into a config replica-set
+    #     -- And remove the net / port entry
+    # (3) Make a mongos
+
+    # To replica-set-ify: run in mongo shell:
+    # rs.initiate({_id:"rs0", members: [ { _id : 0, host : "10.10.21.220"}]}); rs.status();
+    # rs.add('10.10.32.220'); rs.add('10.10.48.220');
+
+    # rs.initiate({_id:"rs1", members: [ { _id : 0, host : "10.10.21.223"}]}); rs.status();
+    # rs.add('10.10.32.223'); rs.add('10.10.48.223');
+
+    # See for sharding: https://docs.mongodb.com/manual/tutorial/convert-replica-set-to-replicated-shard-cluster/
+    # sudo service mongod stop && sudo rm -rf /data/db/ /data/diagnostic.data/ /data/lost+found/ /data/storage.bson && sudo service mongod start && mongo mongodb://localhost:27019
+    # rs.initiate({_id: 'configReplSet', configsvr:true, members:[{_id:0, host:'10.10.21.222:27019'}, {_id:1, host:'10.10.32.222:27019'}, {_id:2, host:'10.10.48.222:27019'}]})
+
+    # For the mongos
+    # sshix 10.10.21.221
+    # sudo service mongod stop && (cd /etc && sudo mv mongod.conf mongos.conf) && sudo vim /etc/mongos.conf && sudo mongos -f /etc/mongos.conf --fork
+
+    # sh.addShard( "rs0/10.10.21.220:27017,10.10.32.220:27017,10.10.48.220:27017" )
+    # sh.addShard( "rs1/10.10.21.223:27017,10.10.32.223:27017,10.10.48.223:27017" )
+
+    cd
+
+    sudo service mongod start
+    jsaws-build-block "build-mongo" "done"
+  fi
+fi
+
+
+
+

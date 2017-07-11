@@ -1,6 +1,11 @@
 #!/bin/bash -e
 
-# booting an instance is just build-instance without creating an ami
-script_dir="$(dirname $0)"
-$script_dir/build-instance --skip-ami "$@"
+eval "$(cli-shezargs $@)"
+
+## booting an instance is just build-instance without creating an ami
+#script_dir="$(dirname $0)"
+#$script_dir/build-instance --skip-ami "$@"
+
+echo "do something like this:"
+echo ra invoke `fn ~/dev/ 'lib/ec2/ec2\.js$'` runInstanceFromAmi --service=web --stack=cluster --ip=10.13.0.10 --image-id=xenial2 --instance-type=c4.xlarge --key=mario_demo --namespace=serverassist --color=green
 

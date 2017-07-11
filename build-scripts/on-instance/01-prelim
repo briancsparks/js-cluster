@@ -40,21 +40,7 @@ if ! stat /tmp | egrep -i '^access:.+777'; then
   exit 253
 fi
 
-# ---------- Format and mount extra data drive -------------------
-if [[ -b /dev/xvdf && ! -d /data ]]; then
-
-  sudo mkfs.ext4 /dev/xvdf
-  echo '/dev/xvdf   /data    ext4  defaults,auto,comment=cloudconfig 0 2' | sudo tee -a /etc/fstab
-
-  sudo mkdir /data && sudo mount /data
-  sudo mkdir -p /data/data
-  sudo chown ${USER}:${USER} /data/data
-
-  # Now you can ln to the extra capacity
-  #ln -s  /data/data /home/${username}/data
-fi
-
-[[ -d ~/zz_packages ]] || mkdir -p ~/zz_packages
+#was: ---------- Format and mount extra data drive -------------------
 
 # ---------- Preliminaries -------------------
 if jsaws-build-block "prelim" "Setting up preliminary stuff"; then
@@ -165,9 +151,6 @@ if jsaws-build-block "node-utils" "Node-based Utilities"; then
 
   npm install -g cli-shezargs
   npm install -g underscore-cli
-  npm install -g tap-difflet
-  npm install -g yaml-cli
-  npm install -g iponmap
 
   jsaws-build-block "node-utils" "done"
 fi
@@ -304,6 +287,20 @@ if jsaws-build-block "build-nginx" "NGINX"; then
 fi
 
 
+
+## ---------- Format and mount extra data drive -------------------
+#if [[ -b /dev/xvdf && ! -d /data ]]; then
+#
+#  sudo mkfs.ext4 /dev/xvdf
+#  echo '/dev/xvdf   /data    ext4  defaults,auto,comment=cloudconfig 0 2' | sudo tee -a /etc/fstab
+#
+#  sudo mkdir /data && sudo mount /data
+#  sudo mkdir -p /data/data
+#  sudo chown ${USER}:${USER} /data/data
+#
+#  # Now you can ln to the extra capacity
+#  #ln -s  /data/data /home/${username}/data
+#fi
 
 
 

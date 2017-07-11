@@ -8,12 +8,13 @@ if [[ -z $skip_ami ]]; then
   ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/${on_instance_build_dir}/on-instance/a01-pre-snapshot" "--message=${service}-build"
 
   create_ami_result="/tmp/js-cluster-create-ami-$$.json"
-  time ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` createAmi --instance-id=${instance_id} --description="jscluster-built-for ${namespace}" --name="${namespace}-${stack}-${build_number}-${service}" \
+  time ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` createAmi --instance-id=${instance_id} --description="jscluster-built-for ${namespace}" --name="${namespace}-${stack}-${build_number}-${service}" --base-name="${base_name}" \
         | tee $create_ami_result \
         | underscore print --color
 
   image_id="$(cat $create_ami_result | underscore select '.ImageId' --outfmt=text)"
   aws ec2 create-tags --resources $image_id --tags "Key=readyFor,Value=test"
+  [[ -n $base_name ]] && aws ec2 create-tags --resources $image_id --tags "Key=baseName,Value=${base_name}"
 
   sleep 5
   wait_for_start $ip

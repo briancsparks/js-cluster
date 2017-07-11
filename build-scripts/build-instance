@@ -55,6 +55,8 @@ fi
 [[ -z $build_number         ]] && build_number="$(ra invoke `fn ~/dev/ 'lib/ec2/ec2\.js$'` getNextBuildNumber --ns=${namespace} | underscore select '.build' --outfmt=text)"
 [[ -z $image_id             ]] && image_id="xenial"
 
+[[ -z $base_name            ]] && base_name="$(echo $image_id | sed 's/[0-9]*$//')"
+
 if [[ -z $ip ]]; then
   ip="$(echo $my_ip | sed 's/[.][0-9][0-9]*$/.91/')"
 
@@ -119,12 +121,13 @@ if [[ -z $skip_ami ]]; then
   ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/build/on-instance/a01-pre-snapshot" "--message=${service}-build"
 
   create_ami_result="/tmp/js-cluster-create-ami-$$.json"
-  time ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` createAmi --instance-id=${instance_id} --description="jscluster-built-for ${namespace}" --name="${namespace}-base-${build_number}-net" \
+  time ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` createAmi --instance-id=${instance_id} --description="jscluster-built-for ${namespace}" --name="${namespace}-anystack-${build_number}-base" \
         | tee $create_ami_result \
         | underscore print --color
 
   image_id="$(cat $create_ami_result | underscore select '.ImageId' --outfmt=text)"
   aws ec2 create-tags --resources $image_id --tags "Key=readyFor,Value=test"
+  [[ -n $base_name ]] && aws ec2 create-tags --resources $image_id --tags "Key=baseName,Value=${base_name}"
 
   sleep 5
   wait_for_start $ip

@@ -6,7 +6,7 @@ var path    = require('path');
 var home    = process.env.HOME        || '/home/scotty';
 var ns      = process.env.NAMESPACE   || 'serverassist';
 
-var envfile = path.join(home, `${namespace}_env.json`);
+var envfile = path.join(home, `${ns}_env.json`);
 
 var key     = process.argv[2];
 var value   = process.argv[3];

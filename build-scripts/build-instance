@@ -1,7 +1,5 @@
 #!/bin/bash -e
 
-my_ip="$(curl -s 'http://169.254.169.254/latest/meta-data/local-ipv4')"
-
 [[ -n $NAMESPACE                    ]] && namespace="$NAMESPACE"
 [[ -n $SERVERASSIST_DB_IP           ]] && db="$SERVERASSIST_DB_IP"
 [[ -n $SERVERASSIST_DB_HOSTNAME     ]] && db="$SERVERASSIST_DB_HOSTNAME"
@@ -16,11 +14,14 @@ my_ip="$(curl -s 'http://169.254.169.254/latest/meta-data/local-ipv4')"
 
 # The cheapest thing with high network
 instance_type="c4.xlarge"
+on_instance_build_dir="build-sa"
 
 eval "$(cli-shezargs $@)"
 
 die() {
   echo "Usage: $0 options" 2>&1
+  echo ""
+  echo "  (cd ~/dev/js-cluster && time ./build-scripts/build-instance --key=mario_demo --service=app --bucket-namespace=mobilewebprint --image-id=precise)"
   echo ""
   echo "          --service=app --key=serverassist_demo --bucket-namespace=mobilewebprint" 2>&1
   echo "          --service=app --key=serverassist_demo --bucket-namespace=mobilewebprint" 2>&1
@@ -52,22 +53,21 @@ if [[ -z $namespace ]];then
 fi
 
 [[ -z $color                ]] && color="teal"
-[[ -z $build_number         ]] && build_number="$(ra invoke `fn ~/dev/ 'lib/ec2/ec2\.js$'` getNextBuildNumber --ns=${namespace} | underscore select '.build' --outfmt=text)"
+[[ -z $build_number         ]] && build_number="$(jsaws-ec2 getNextBuildNumber --ns=${namespace} | underscore select '.build' --outfmt=text)"
 [[ -z $image_id             ]] && image_id="xenial"
 
 [[ -z $base_name            ]] && base_name="$(echo $image_id | sed 's/[0-9]*$//')"
 
 if [[ -z $ip ]]; then
+  my_ip="$(curl -s 'http://169.254.169.254/latest/meta-data/local-ipv4')"
   ip="$(echo $my_ip | sed 's/[.][0-9][0-9]*$/.91/')"
 
-  if   [[ $color == green   ]]; then my_ip="$(echo $my_ip | sed 's/[.]0[.]/.21./')"
-  elif [[ $color == blue    ]]; then my_ip="$(echo $my_ip | sed 's/[.]0[.]/.22./')"
-  elif [[ $color == teal    ]]; then my_ip="$(echo $my_ip | sed 's/[.]0[.]/.23./')"
-  elif [[ $color == yellow  ]]; then my_ip="$(echo $my_ip | sed 's/[.]0[.]/.24./')"
+  if   [[ $color == green   ]]; then ip="$(echo $ip | sed 's/[.]0[.]/.21./')"
+  elif [[ $color == blue    ]]; then ip="$(echo $ip | sed 's/[.]0[.]/.22./')"
+  elif [[ $color == teal    ]]; then ip="$(echo $ip | sed 's/[.]0[.]/.23./')"
+  elif [[ $color == yellow  ]]; then ip="$(echo $ip | sed 's/[.]0[.]/.24./')"
   fi
-
 fi
-[[ -z $ip                   ]] && ip="$(echo $my_ip | sed 's/[.][0-9][0-9]*$/.91/')"
 
 [[ -n $ip                   ]] || die "Missing --ip"
 [[ -n $color                ]] || die "Missing --color"
@@ -90,17 +90,17 @@ fi
 [[ -n $xvdf                 ]] && run_instance_params="$run_instance_params --xvdf=$xvdf"
 
 # -------------------- Run Instance --------------------
-run_instance_result="/tmp/js-cluster-build-instance-$$.json"
-if [[ -z $dry_run ]]; then
-       ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` runInstance $run_instance_params --first-buildup --jsaws-boot | tee $run_instance_result | underscore print --color
-else
-  echo ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` runInstance $run_instance_params --first-buildup --jsaws-boot
+echo jsaws-ec2 runInstance $run_instance_params --first-buildup --jsaws-boot
+if [[ -n $dry_run ]]; then
   exit 0
 fi
 
+run_instance_result="/tmp/js-cluster-build-instance-$$.json"
+     jsaws-ec2 runInstance $run_instance_params --first-buildup --jsaws-boot | tee $run_instance_result | underscore print --color
+
 # Get the actual IP from the result
-ip="$(cat $run_instance_result | underscore select '.InstanceId ~ .PrivateIpAddress' --outfmt=text)"
-instance_id="$(cat $run_instance_result | underscore select '.PrivateIpAddress ~ .InstanceId' --outfmt=text)"
+ip="$(jsaws-get $run_instance_result '.InstanceId ~ .PrivateIpAddress')"
+instance_id="$(jsaws-get $run_instance_result '.PrivateIpAddress ~ .InstanceId')"
 
 wait_for_start $ip
 
@@ -110,22 +110,20 @@ scpix -r ${script_dir}/* "${ip}:~/zz_packages/build/"
 
 # -------------------- aa-build-all --------------------
 
-                         build_all_params="$build_all_params ${bucket_namespace} ${service} --namespace=${namespace} --stack=${stack} --service=${service}"
-[[ -n $ruby       ]] &&  build_all_params="$build_all_params --ruby"
+build_all_params="$build_all_params ${bucket_namespace} ${service} --namespace=${namespace} --stack=${stack} --service=${service}"
 
-ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/build/on-instance/aa-build-all ${build_all_params}" "--message=${service}-build"
+jsaws-ssh-run "$ip" "./zz_packages/build/on-instance/aa-build-all ${build_all_params}" "${service}-build"
 
 # -------------------- Create AMI ----------------------
 if [[ -z $skip_ami ]]; then
 
-  ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/build/on-instance/a01-pre-snapshot" "--message=${service}-build"
+  jsaws-ssh-run "$ip" "./zz_packages/build/on-instance/a01-pre-snapshot" "${service}-build"
 
   create_ami_result="/tmp/js-cluster-create-ami-$$.json"
-  time ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` createAmi --instance-id=${instance_id} --description="jscluster-built-for ${namespace}" --name="${namespace}-anystack-${build_number}-base" \
-        | tee $create_ami_result \
-        | underscore print --color
+  time jsaws-ec2 createAmi --instance-id=${instance_id} --description="jscluster for ${namespace}" --name="${namespace}-anystack-${build_number}-base" | tee $create_ami_result | underscore print --color
 
-  image_id="$(cat $create_ami_result | underscore select '.ImageId' --outfmt=text)"
+  image_id="$(jsaws-get $create_ami_result '.ImageId')"
+
   aws ec2 create-tags --resources $image_id --tags "Key=readyFor,Value=test"
   [[ -n $base_name ]] && aws ec2 create-tags --resources $image_id --tags "Key=baseName,Value=${base_name}"
 
@@ -135,7 +133,7 @@ if [[ -z $skip_ami ]]; then
   # -------------------- Terminate Instance ----------------------
   if [[ -z $no_terminate ]]; then
 
-    ra invoke `fn ${script_dir}/../../ 'lib/ec2/ec2\.js$'` terminateInstance --instance-id=${instance_id} | underscore print --color
+    jsaws-ec2 terminateInstance --instance-id=${instance_id} | underscore print --color
 
     #
     # This is the *normal* exit
@@ -146,6 +144,6 @@ if [[ -z $skip_ami ]]; then
 fi
 
 # -------------------- Startup Services ----------------------
-ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/build/on-instance/b01-start-from-snapshot" "--message=${service}-build"
-ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/build/on-instance/b02-start-services" "--message=${service}-build"
+jsaws-ssh-run "$ip" "./zz_packages/build/on-instance/b01-start-from-snapshot" "${service}-build"
+jsaws-ssh-run "$ip" "./zz_packages/build/on-instance/b02-start-services" "${service}-build"
 

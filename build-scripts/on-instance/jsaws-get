@@ -1,0 +1,7 @@
+#!/bin/bash -e
+
+jsonfile="$1"
+selector="$2"
+
+cat $jsonfile | underscore 'select' "$selector" --outfmt=text
+

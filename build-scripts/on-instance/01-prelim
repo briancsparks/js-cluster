@@ -60,6 +60,8 @@ if jsaws-build-block "prelim" "Setting up preliminary stuff"; then
     sudo perl -pi -e "s/PATH=\"/PATH=\"\/home\/${username}\/local\/bin:/g" /etc/environment
     export PATH="${HOME}/local/bin:$PATH"
 
+    jsaws-set-env SERVERASSIST_MY_IP "$(curl -s 'http://169.254.169.254/latest/meta-data/local-ipv4')"
+
     touch ~/zz_packages/prelim
   fi
 

@@ -1,0 +1,8 @@
+#!/bin/bash -e
+
+hostname="${JS_CLUSTER_UTIL_HOSTNAME}"
+
+[[ -z $hostname ]] && hostname="${SERVERASSIST_UTIL_HOSTNAME}"
+
+echo $hostname
+

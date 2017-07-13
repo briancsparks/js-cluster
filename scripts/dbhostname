@@ -1,0 +1,9 @@
+#!/bin/bash -e
+
+hostname="${JS_CLUSTER_DB_HOSTNAME}"
+
+[[ -z $hostname ]] && hostname="${SERVERASSIST_DB_HOSTNAME}"
+
+echo $hostname
+
+

@@ -1,0 +1,8 @@
+#!/bin/bash -e
+
+ip="${JS_CLUSTER_UTIL_IP}"
+
+[[ -z $ip ]] && ip="${SERVERASSIST_UTIL_IP}"
+
+echo $ip
+

@@ -24,7 +24,9 @@ lib._registerService = function(redis, namespace, name, socket, uniq, ttl, callb
 
   return redis.psetex(uniqKey, ttl, socket, function(err, res) {
     return redis.sadd(key, uniqKey, function(err, res) {
-      return callback.apply(this, arguments);
+      return redis.expire(key, 60, function(err, res) {
+        return callback.apply(this, arguments);
+      });
     });
   });
 };

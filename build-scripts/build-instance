@@ -19,9 +19,11 @@ on_instance_build_dir="build-sa"
 eval "$(cli-shezargs $@)"
 
 die() {
+  echo "  $@"
+  echo ""
   echo "Usage: $0 options" 2>&1
   echo ""
-  echo "  (cd ~/dev/js-cluster && time ./build-scripts/build-instance --key=mario_demo --service=app --bucket-namespace=mobilewebprint --image-id=precise)"
+  echo "  ./build-scripts/build-instance --key=mario_demo --service=app --bucket-namespace=mobilewebprint --image-id=precise"
   echo ""
   echo "          --service=app --key=serverassist_demo --bucket-namespace=mobilewebprint" 2>&1
   echo "          --service=app --key=serverassist_demo --bucket-namespace=mobilewebprint" 2>&1
@@ -41,10 +43,13 @@ die() {
   echo "          --xvdf="
   echo "          --color="
   echo ""
-  echo "  $@"
-  echo ""
   exit 1
 }
+
+# These never get auto-generated, so exit early
+[[ -n $key                  ]] || die "Missing --key"
+[[ -n $service              ]] || die "Missing --service"
+[[ -n $bucket_namespace     ]] || die "Missing --bucket-namespace"
 
 if [[ -z $namespace ]];then
   [[ -z $NAMESPACE ]] && die "Missing --namespace"
@@ -71,11 +76,8 @@ fi
 
 [[ -n $ip                   ]] || die "Missing --ip"
 [[ -n $color                ]] || die "Missing --color"
-[[ -n $key                  ]] || die "Missing --key"
 [[ -n $instance_type        ]] || die "Missing --instance-type"
 [[ -n $build_number         ]] || die "Missing --build-number"
-[[ -n $bucket_namespace     ]] || die "Missing --bucket-namespace"
-[[ -n $service              ]] || die "Missing --service"
 
 # ----- Build up the cli parameters
 [[ -n $db                   ]] && run_instance_params="$run_instance_params --db=$db"

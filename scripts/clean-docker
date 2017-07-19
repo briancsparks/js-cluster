@@ -1,0 +1,13 @@
+#!/bin/bash -e
+
+# remove exited containers:
+docker ps --filter status=dead --filter status=exited -aq | xargs --no-run-if-empty docker rm -v
+
+# remove unused images:
+docker images --no-trunc | grep '<none>' | awk '{ print $3 }' | xargs --no-run-if-empty docker rmi
+
+# remove unused volumes:
+sudo find '/var/lib/docker/volumes/' -mindepth 1 -maxdepth 1 -type d | grep -vFf <(
+  docker ps -aq | xargs --no-run-if-empty docker inspect | jq -r '.[] | .Mounts | .[] | .Name | select(.)'
+) | xargs --no-run-if-empty rm -fr
+

@@ -1,0 +1,14 @@
+#!/bin/bash -e
+
+set -f
+eval "$(cli-shezargs $@)"
+set +f
+
+[[ $# == 1 && ${1,,} == keys ]] && additional="*"
+
+if [[ -n $additional ]]; then
+  redis-cli -h "$(${script_dir}/utilip)" -p 6379 "$@" "$additional"
+else
+  redis-cli -h "$(${script_dir}/utilip)" -p 6379 "$@"
+fi
+

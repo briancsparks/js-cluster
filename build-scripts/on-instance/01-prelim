@@ -90,7 +90,11 @@ fi
 if jsaws-build-block "validate-github" "Validate with github"; then
   if ! git config --global user.email; then
 
+    # Github
     ssh -o "StrictHostKeyChecking no" git@github.com || true
+
+    # Github Enterprise
+    ssh -o "StrictHostKeyChecking no" git@github.azc.ext.hp.com || true
 
     git config --global user.email "yoshi.t.munchakoopas@hp.com"
     git config --global user.name "Yoshi T. Munchakoopas"
@@ -199,7 +203,7 @@ if env | egrep -i '_service=admin'; then
 
       [[ -d sgsg         ]] || (git clone git@github.com:briancsparks/sg sgsg       && cd sgsg                                        && npm install --production    && npm link --production)
       [[ -d js-cluster   ]] || (git clone git@github.com:briancsparks/js-cluster    && cd js-cluster    && git checkout "mo-mario"    && npm install --production    && npm link --production)
-      [[ -d run-anywhere ]] || (git clone git@github.com:briancsparks/run-anywhere  && cd run-anywhere  && git checkout "mo-mario"    && npm install --production    && npm link --production)
+      [[ -d run-anywhere ]] || (git clone git@github.com:briancsparks/run-anywhere  && cd run-anywhere                                && npm install --production    && npm link --production)
       [[ -d js-aws       ]] || (git clone git@github.com:briancsparks/js-aws        && cd js-aws                                      && npm install --production    && npm link --production)
 
     fi

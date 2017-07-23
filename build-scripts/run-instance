@@ -1,0 +1,96 @@
+#!/bin/bash -e
+
+#
+# run-instance --stack=test --color=blue --project-id=sa --service=web --instance-type=t2.large --namespace=serverassist
+#
+
+eval "$(cli-shezargs $@)"
+
+[[ -n $stack                  ]] || die "Need --stack="
+[[ -n $color                  ]] || die "Need --color="
+
+if [[ -n $project_id ]]; then
+  [[ -n $service                ]] || die "Need --service= for a project lookup"
+
+  config="/tmp/config-$$.json"
+  ra invoke "$(fn ~/dev/ 'serverassist/ra-scripts/project\.js$')" projectInfoForInstance --project-id=sa --color="${color}" --stack="${stack}" --service="${service}" > "${config}"
+
+  if   [[ $stack =~ ^pub      ]]; then   config_key="$(jsaws-get $config '.awsProdKey')";  config_class_b="$(jsaws-get $config '.prodClassB')"
+  elif [[ $stack =~ ^prod     ]]; then   config_key="$(jsaws-get $config '.awsProdKey')";  config_class_b="$(jsaws-get $config '.prodClassB')"
+  elif [[ $stack =~ ^cluster  ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.clusterClassB')"
+  elif [[ $stack =~ ^test     ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.testClassB')"
+  elif [[ $stack =~ ^dev      ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.testClassB')"
+  elif [[ $stack =~ ^burn     ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.testClassB')"
+  fi
+
+  if   [[ $service =~ ^web    ]]; then   config_class_d="10"
+  elif [[ $service =~ ^rip    ]]; then   config_class_d="16"
+  elif [[ $service =~ ^app    ]]; then   config_class_d="32"
+  elif [[ $service =~ ^netapp ]]; then   config_class_d="100"
+  elif [[ $service =~ ^cont   ]]; then   config_class_d="200"
+  elif [[ $service =~ ^util   ]]; then   config_class_d="4"
+  elif [[ $service =~ ^db     ]]; then   config_class_d="220"
+  fi
+
+  if   [[ $color == green     && $service =~ ^web   ]]; then   config_class_c="0"
+  elif [[ $color == blue      && $service =~ ^web   ]]; then   config_class_c="1"
+  elif [[ $color == teal      && $service =~ ^web   ]]; then   config_class_c="2"
+  elif [[ $color == yellow    && $service =~ ^web   ]]; then   config_class_c="3"
+
+  elif [[ $color == green     ]]; then   config_class_c="21"
+  elif [[ $color == blue      ]]; then   config_class_c="22"
+  elif [[ $color == teal      ]]; then   config_class_c="23"
+  elif [[ $color == yellow    ]]; then   config_class_c="24"
+  fi
+
+  [[ -z $key                ]] && key="$config_key"
+
+  if [[ -z $ip ]]; then
+    ip="10.${config_class_b}.${config_class_c}.${config_class_d}"
+  fi
+fi
+
+[[ -n $service                ]] && svc="--service=${service}"
+
+[[ -z $service                ]] && service="service"
+
+[[ -n $key                    ]] || die "Need --key="
+[[ -n $instance_type          ]] || die "Need --instance-type="
+[[ -n $namespace              ]] || die "Need --namespace="
+[[ -n $ip                     ]] || die "Need --ip="
+
+if [[ -z $image_id ]]; then
+  [[ -n $base_name ]] || base_name="xenial"
+
+  ra invoke `fn $HOME/dev/ 'lib/ec2/ec2\.js$'` getAmiIdsForBuild --namespace="${namespace}" --base-name="${base_name}" > /tmp/base-name-$$.json
+  #cat /tmp/base-name-$$.json | underscore print --color
+  image_id="$(cat /tmp/base-name-$$.json | underscore 'select' ".${service} .imageId" --outfmt=text)"
+  bld_num="--build-number=$(cat /tmp/base-name-$$.json | underscore 'select' ".${service} .build" --outfmt=text)"
+fi
+
+ ra invoke `fn $HOME/dev/ 'lib/ec2/ec2\.js$'` runInstanceFromAmi \
+    --ip="${ip}" \
+    --color="${color}" \
+    --key="${key}" \
+    --namespace="${namespace}" \
+    --stack="${stack}" \
+    --db="${SERVERASSIST_DB_IP}" \
+    --util="${SERVERASSIST_UTIL_IP}" \
+    --instance-type="${instance_type}" \
+    --image-id="${image_id}" \
+    ${bld_num} \
+    | tee /tmp/run-instance-from-ami-${service}-$$.json | underscore print --color
+
+ip="$(cat /tmp/run-instance-from-ami-${service}-$$.json | underscore select '.InstanceId ~ .PrivateIpAddress' --outfmt=text)"
+
+echo "Running from AMI: $ip as $service for stack $stack, (${image_id} ${instance_type})"
+
+sleep 5
+wait_for_start $ip
+
+sshix ${ip} "jsaws-set-env SERVERASSIST_STACK   ${stack}"
+
+ra invoke `fn ~/dev/ ssh\.js$` sshRun --ip=${ip} --command="./build-scripts/on-instance/b01-start-from-snapshot"  --message="${service}-sfss"
+ra invoke `fn ~/dev/ ssh\.js$` sshRun --ip=${ip} --command="./build-scripts/on-instance/b02-start-services"       --message="${service}-start"
+
+

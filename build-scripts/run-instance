@@ -4,6 +4,8 @@
 # run-instance --stack=test --color=blue --project-id=sa --service=web --instance-type=t2.large --namespace=serverassist
 #
 
+as_pid="$$"
+
 eval "$(cli-shezargs $@)"
 
 [[ -n $stack                  ]] || die "Need --stack="
@@ -12,7 +14,7 @@ eval "$(cli-shezargs $@)"
 if [[ -n $project_id ]]; then
   [[ -n $service                ]] || die "Need --service= for a project lookup"
 
-  config="/tmp/config-$$.json"
+  config="/tmp/config-${as_pid}.json"
   ra invoke "$(fn ~/dev/ 'serverassist/ra-scripts/project\.js$')" projectInfoForInstance --project-id=sa --color="${color}" --stack="${stack}" --service="${service}" > "${config}"
 
   if   [[ $stack =~ ^pub      ]]; then   config_key="$(jsaws-get $config '.awsProdKey')";  config_class_b="$(jsaws-get $config '.prodClassB')"
@@ -62,13 +64,13 @@ fi
 if [[ -z $image_id ]]; then
   [[ -n $base_name ]] || base_name="xenial"
 
-  ra invoke `fn $HOME/dev/ 'lib/ec2/ec2\.js$'` getAmiIdsForBuild --namespace="${namespace}" --base-name="${base_name}" > /tmp/base-name-$$.json
-  #cat /tmp/base-name-$$.json | underscore print --color
-  image_id="$(cat /tmp/base-name-$$.json | underscore 'select' ".${service} .imageId" --outfmt=text)"
-  bld_num="--build-number=$(cat /tmp/base-name-$$.json | underscore 'select' ".${service} .build" --outfmt=text)"
+  ra invoke `fn $HOME/dev/ 'lib/ec2/ec2\.js$'` getAmiIdsForBuild --namespace="${namespace}" --base-name="${base_name}" > /tmp/base-name-${as_pid}.json
+  #cat /tmp/base-name-${as_pid}.json | underscore print --color
+  image_id="$(cat /tmp/base-name-${as_pid}.json | underscore 'select' ".${service} .imageId" --outfmt=text)"
+  bld_num="--build-number=$(cat /tmp/base-name-${as_pid}.json | underscore 'select' ".${service} .build" --outfmt=text)"
 fi
 
- ra invoke `fn $HOME/dev/ 'lib/ec2/ec2\.js$'` runInstanceFromAmi \
+ra invoke `fn $HOME/dev/ 'lib/ec2/ec2\.js$'` runInstanceFromAmi \
     --ip="${ip}" \
     --color="${color}" \
     --key="${key}" \
@@ -79,9 +81,9 @@ fi
     --instance-type="${instance_type}" \
     --image-id="${image_id}" \
     ${bld_num} \
-    | tee /tmp/run-instance-from-ami-${service}-$$.json | underscore print --color
+    | tee /tmp/run-instance-from-ami-${service}-${as_pid}.json | underscore print --color
 
-ip="$(cat /tmp/run-instance-from-ami-${service}-$$.json | underscore select '.InstanceId ~ .PrivateIpAddress' --outfmt=text)"
+ip="$(cat /tmp/run-instance-from-ami-${service}-${as_pid}.json | underscore select '.InstanceId ~ .PrivateIpAddress' --outfmt=text)"
 
 echo "Running from AMI: $ip as $service for stack $stack, (${image_id} ${instance_type})"
 

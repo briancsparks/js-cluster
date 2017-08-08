@@ -94,7 +94,9 @@ sshix ${ip} "jsaws-set-env SERVERASSIST_STACK   ${stack}"
 sshix ${ip} "jsaws-set-env SERVERASSIST_COLOR   ${color}"
 sshix ${ip} "jsaws-set-env SERVERASSIST_SERVICE ${service}"
 
-ra invoke `fn ~/dev/ ssh\.js$` sshRun --ip=${ip} --command="./build-scripts/on-instance/b01-start-from-snapshot"  --message="${service}-sfss"
-ra invoke `fn ~/dev/ ssh\.js$` sshRun --ip=${ip} --command="./build-scripts/on-instance/b02-start-services"       --message="${service}-start"
+if [[ -z $skip_start ]]; then
+  ra invoke `fn ~/dev/ ssh\.js$` sshRun --ip=${ip} --command="./build-scripts/on-instance/b01-start-from-snapshot"  --message="${service}-sfss"
+  ra invoke `fn ~/dev/ ssh\.js$` sshRun --ip=${ip} --command="./build-scripts/on-instance/b02-start-services"       --message="${service}-start"
+fi
 
 

@@ -146,6 +146,10 @@ lib.ServiceLists = function(redisHost_, redisPort_) {
   var index      = 0;
 
   var serviceListList = [];
+  self.numServices = function() {
+    return serviceListList.length;
+  };
+
   self.addService = function(serviceList) {
     serviceListList.push(serviceList);
   };

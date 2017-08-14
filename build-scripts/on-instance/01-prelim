@@ -155,8 +155,10 @@ fi
 # ---------- Node-based utils -----------
 if jsaws-build-block "node-utils" "Node-based Utilities"; then
 
-  npm install -g cli-shezargs
-  npm install -g underscore-cli
+  yarn global add cli-shezargs
+  yarn global add underscore-cli
+  yarn global add run-anywhere
+  yarn global add serve
 
   jsaws-build-block "node-utils" "done"
 fi

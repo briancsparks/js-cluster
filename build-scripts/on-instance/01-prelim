@@ -166,6 +166,9 @@ fi
 # ---------- First big apt-get ----------
 if jsaws-build-block "first-big-apt-get" "Big first apt-get"; then
 
+  # Add other repos
+  sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:adiscon/v8-stable
+
   # Install big, basic stuff
   sudo DEBIAN_FRONTEND=noninteractive apt-get update
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -173,7 +176,7 @@ if jsaws-build-block "first-big-apt-get" "Big first apt-get"; then
       libreadline6 git-core build-essential openssl nmap mercurial socat gawk libcurl4-openssl-dev ncurses-dev libncurses5-dev \
       libgdbm-dev libyaml-dev libffi-dev libreadline6-dev zlib1g zlib1g-dev libssl-dev autoconf libc6-dev automake libtool \
       bison subversion pkg-config libperl-dev liblzma-dev libpcre3 libpcre3-dev libgd-tools libsqlite3-dev sqlite3 libxml2-dev \
-      libxslt-dev libmysqlclient-dev cscope exuberant-ctags realpath unzip libcairo2 libcairo2-dev libjpeg-dev
+      libxslt-dev libmysqlclient-dev cscope exuberant-ctags realpath unzip libcairo2 libcairo2-dev libjpeg-dev rsyslog
 
   jsaws-build-block "first-big-apt-get" "done"
 

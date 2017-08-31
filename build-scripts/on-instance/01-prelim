@@ -51,11 +51,7 @@ if jsaws-build-block "prelim" "Setting up preliminary stuff"; then
     sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git curl  ntp build-essential autoconf libc6-dev automake libtool bison
 
-    # Make certain dirs available
-    sudo mkdir -p /var/log
-    sudo chown root:admin /var     && sudo chmod g+w /var
-    sudo chown root:admin /var/log && sudo chmod g+w /var/log
-
+    # Make a user-specific binary dir
     mkdir -p ~/local/bin
     sudo perl -pi -e "s/PATH=\"/PATH=\"\/home\/${username}\/local\/bin:/g" /etc/environment
     export PATH="${HOME}/local/bin:$PATH"

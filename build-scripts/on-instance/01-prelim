@@ -180,6 +180,16 @@ if jsaws-build-block "first-big-apt-get" "Big first apt-get"; then
   check_reboot "big initial install"
 fi
 
+# ---------- rsyslog ----------
+if jsaws-build-block "rsyslog" "Fixing for logging"; then
+
+  # Turn on UDP inside rsyslog
+  sudo perl -pi -e 's/^#(.*ModLoad\s+imudp.*)$/$1/'    /etc/rsyslog.conf
+  sudo perl -pi -e 's/^#(.*UDPServerRun\s+514.*)$/$1/' /etc/rsyslog.conf
+
+  jsaws-build-block "rsyslog" "done"
+fi
+
 # ---------- Admin ----------
 if env | egrep -i '_service=admin'; then
 
@@ -211,6 +221,25 @@ if env | egrep -i '_service=admin'; then
 
     jsaws-build-block "admin-repos" "done"
   fi
+fi
+
+#
+# Above here are mostly system utilities and such, below here are our own code. Hence,
+# at this point, the software that does the system level config is generally done. So,
+# we make some final fixups that should not get clobbered.
+#
+
+# ---------- Post fixups ----------
+if jsaws-build-block "post-fixups" "Post fixups"; then
+
+  # /var/log needs to have group write access
+  sudo chmod g+w /var
+  sudo chmod g+w /var/log
+
+  ls -l /
+  ls -l /var
+
+  jsaws-build-block "post-fixups" "done"
 fi
 
 # ---------- nginx ----------

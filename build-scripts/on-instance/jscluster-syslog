@@ -1,0 +1,42 @@
+#!/bin/bash -e
+
+color="$SERVERASSIST_COLOR"
+stack="$SERVERASSIST_STACK"
+
+###############################################################################
+
+tmpfile="/tmp/13-jscluster.conf"
+
+cat > $tmpfile <<-EOF
+
+# :vim filetype=conf:
+
+# Log js-cluster messages (all our pm2 logs for our Node.js code)
+:syslogtag, contains, "JSCLUSTER" /var/log/jscluster.log
+
+# Do not send those lines to syslog
+& stop
+
+EOF
+
+###############################################################################
+
+tmpfile="/tmp/61-jscluster.conf"
+
+tag="$(echo ${color}-${stack}-JSCLUSTER | tr -d '-')"
+
+cat > $tmpfile <<-EOF
+
+# :vim filetype=conf:
+
+#module(load="imfile")
+#module(load="builtin:omfwd")
+
+ruleset(name="jscluster_rs") {
+  action(type="omfwd" target="${SERVERASSIST_UTIL_IP}" port="10598" protocol="tcp")
+}
+
+input(type="imfile" File="/var/log/jscluster.log" Tag="${tag}" ruleset="jscluster_rs" Facility="local7")
+
+EOF
+

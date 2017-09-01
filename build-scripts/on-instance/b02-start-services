@@ -6,4 +6,38 @@
 
 eval "$(cli-shezargs $@)"
 
+# Make sure we have permissions
+ls -l /
+ls -l /var
+
+sudo chmod g+w /var
+sudo chmod g+w /var/log
+
+ls -l /
+ls -l /var
+
+
+# Turn on UDP inside rsyslog
+sudo perl -pi -e 's/^#(.*ModLoad\s+imudp.*)$/$1/'    /etc/rsyslog.conf
+sudo perl -pi -e 's/^#(.*UDPServerRun\s+514.*)$/$1/' /etc/rsyslog.conf
+
+# Send all script log files to the util server
+./jscluster-syslog && \
+    sudo cp '/tmp/13-jscluster.conf' /etc/rsyslog.d/ && \
+    sudo cp '/tmp/61-jscluster.conf' /etc/rsyslog.d/
+
+if [[ $SERVERASSIST_SERVICE == web ]]; then
+
+  # Send all nginx log files to the util server
+  ./nginx-syslog && sudo cp /tmp/60-serverassist.conf /etc/rsyslog.d/
+fi
+
+sudo service rsyslog restart
+
+# Startup (install) the pm2 rsyslog plugin
+[[ -d ~/dev/pm2-js-cluster ]] && (cd ~/dev/pm2-js-cluster && pm2 install . )
+
+ls -l /
+ls -l /var
+
 

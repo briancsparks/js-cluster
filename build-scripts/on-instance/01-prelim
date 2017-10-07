@@ -213,7 +213,7 @@ if env | egrep -i '_service=admin'; then
       mkdir -p ~/dev && cd $_
 
       [[ -d sgsg         ]] || (git clone git@github.com:briancsparks/sg sgsg       && cd sgsg                                        && npm install --production    && npm link --production)
-      [[ -d js-cluster   ]] || (git clone git@github.com:briancsparks/js-cluster    && cd js-cluster    && git checkout "mo-mario"    && npm install --production    && npm link --production)
+      [[ -d js-cluster   ]] || (git clone git@github.com:briancsparks/js-cluster    && cd js-cluster    && git checkout "no-mario"    && npm install --production    && npm link --production)
       [[ -d run-anywhere ]] || (git clone git@github.com:briancsparks/run-anywhere  && cd run-anywhere                                && npm install --production    && npm link --production)
       [[ -d js-aws       ]] || (git clone git@github.com:briancsparks/js-aws        && cd js-aws                                      && npm install --production    && npm link --production)
 

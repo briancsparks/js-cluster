@@ -24,7 +24,9 @@ lib._registerService = function(redis, namespace, name, socket, uniq, ttl, callb
 
   return redis.psetex(uniqKey, ttl, socket, function(err, res) {
     return redis.sadd(key, uniqKey, function(err, res) {
-      return callback.apply(this, arguments);
+      return redis.expire(key, 60, function(err, res) {
+        return callback.apply(this, arguments);
+      });
     });
   });
 };
@@ -46,14 +48,14 @@ lib._getServiceLocations = function(redis, namespace, name, callback) {
 // The old, confusing name
 lib._getServiceLocation = lib._getServiceLocations;
 
-var ServiceList = lib.ServiceList = function(namespace, host_, port_) {
+var ServiceList = lib.ServiceList = function(namespace, redisHost_, redisPort_) {
   var self = this;
 
-  var host  = host_ || 'localhost';
-  var port  = port_ || 6379;
-  var index = 0;
+  var redisHost  = redisHost_ || 'localhost';
+  var redisPort  = redisPort_ || 6379;
+  var index      = 0;
 
-  var redis = redisLib.createClient(port, host);
+  var redis = redisLib.createClient(redisPort, redisHost);
 
   self.registerService = function(name, socket, uniq, ttl, callback) {
     return lib._registerService(redis, namespace, name, socket, uniq, ttl, callback);
@@ -136,20 +138,24 @@ var getServiceLocations = lib.getServiceLocations = function(serviceListList, na
 // The old, confusing name
 var getServices = lib.getServices = getServiceLocations;
 
-lib.ServiceLists = function(host_, port_) {
+lib.ServiceLists = function(redisHost_, redisPort_) {
   var self  = this;
 
-  var host  = host_ || 'localhost';
-  var port  = port_ || 6379;
-  var index = 0;
+  var redisHost  = redisHost_ || 'localhost';
+  var redisPort  = redisPort_ || 6379;
+  var index      = 0;
 
   var serviceListList = [];
+  self.numServices = function() {
+    return serviceListList.length;
+  };
+
   self.addService = function(serviceList) {
     serviceListList.push(serviceList);
   };
 
   self.add = function(namespace) {
-    self.addService(new ServiceList(namespace, host, port));
+    self.addService(new ServiceList(namespace, redisHost, redisPort));
   };
 
   self.getServiceLocations = function(name, callback) {
@@ -165,6 +171,27 @@ lib.ServiceLists = function(host_, port_) {
       }
 
       return callback(null, services[index]);
+    });
+  };
+
+  self.waitForOneServiceLocation = function(name, def, callback) {
+    return sg.until(function(again, last, count, elapsed) {
+      return self.getOneServiceLocation(name, function(err, location) {
+        if (!sg.ok(err, location)) {
+          console.error(`Waiting for ${name} service, elapsed: ${elapsed}`);
+          if (elapsed < 30*minutes)   { return again(5000); }
+
+          /* otherwise -- we have waited too long. */
+          console.error(`Waited too long for ${name}, using default: ${def}`);
+          return last(def);
+        }
+
+        // Finally got it
+        return last(location);
+      });
+
+    }, /*until:done*/ function(location) {
+      return callback(null, location);
     });
   };
 
@@ -184,17 +211,6 @@ lib.ServiceListList = lib.ServiceLists;
 
 // The old, confusing name
 lib.Services = lib.ServiceLists;
-
-lib.serviceLocations = lib.gsl = function(argv, context, callback) {
-  var namespace   = sg.argvGet(argv, 'namespace,ns');
-  var name        = sg.argvGet(argv, 'name');
-  var serviceList = new ServiceList(namespace, sg.argvGet(argv, 'util-host,host'), sg.argvGet(argv, 'util-port,port'));
-
-  return serviceList.getServiceLocations(name, function(err, result) {
-    serviceList.quit();
-    return callback(err, result);
-  });
-};
 
 _.each(lib, function(value, key) {
   exports[key] = value;

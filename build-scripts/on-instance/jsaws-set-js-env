@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+
+var fs      = require('fs');
+var path    = require('path');
+
+var home    = process.env.HOME        || '/home/scotty';
+var ns      = process.env.NAMESPACE   || 'serverassist';
+
+var envfile = path.join(home, `${ns}_env.json`);
+
+var key     = process.argv[2];
+var value   = process.argv[3];
+
+if (!key || !value) {
+  return;
+}
+
+var obj = {};
+try {
+  obj = require(envfile);
+} catch (e) {
+  obj = {};
+}
+
+if (value.match(/^[0-9]*$/)) {
+  value = +value;
+}
+
+obj[key] = value;
+
+fs.writeFileSync(envfile, JSON.stringify(obj, null, 2)+'\n', 'utf8');
+

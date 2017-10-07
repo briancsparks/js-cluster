@@ -1,0 +1,21 @@
+#!/bin/bash -e
+
+eval "$(cli-shezargs $@)"
+
+# ----- Redis -----
+if jsaws-build-block "redis" "Install redis"; then
+
+  mkdir -p ~/zz_packages && cd $_
+  aws s3 cp "s3://${bucket}/buildout/packages/redis-3.2.1.tar.gz" ./
+
+  tar xf redis-3.2.1.tar.gz
+  ln -s "$(find ./ -maxdepth 1 -type d | egrep 'redis')" redis && cd $_
+
+  make -j`grep -c ^processor /proc/cpuinfo`
+  sudo make install
+
+  cat redis.conf | sed "s/daemonize no/daemonize yes/g; s/^bind 127.*/bind $my_ip/g" | sudo tee /etc/redis.conf > /dev/null
+
+  jsaws-build-block "redis" "done"
+fi
+

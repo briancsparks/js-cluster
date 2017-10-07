@@ -1,0 +1,24 @@
+#!/bin/bash -e
+
+eval "$(cli-shezargs $@)"
+
+set_env() {
+  # ----- /etc/environment -----
+
+  # Kill the item, if it is already in the file
+  sudo perl -ni -e "print unless /^${1}=/" /etc/environment
+
+  # Then, append it
+  echo "$1=$2" | sudo tee -a /etc/environment > /dev/null
+
+  # Finally, remove blank lines
+  sudo perl -ni -e 'print unless /^$/' /etc/environment
+
+}
+
+# Restore /etc/environment (remove vars, leave PATH)
+grep '^PATH' /etc/environment | sudo tee /etc/environment
+
+set_env NPM_CONFIG_PREFIX "$NPM_CONFIG_PREFIX"
+set_env NODE_PATH "$NODE_PATH"
+

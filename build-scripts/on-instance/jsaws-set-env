@@ -1,0 +1,44 @@
+#!/bin/bash -e
+
+home="${HOME}"
+
+[[ -n $home ]] || home="/home/$(whoami)"
+[[ -d $home ]] || home="/home/scotty"
+
+namespace="$NAMESPACE"
+
+#
+# Set our 'magic' env vars in various places, so everyone knows them
+#
+
+echo "jsaws-set-env $1 $2; HOME: $home"
+
+# ----- First is /etc/environment -----
+
+# Kill the item, if it is already in the file
+sudo perl -ni -e "print unless /^${1}=/" /etc/environment
+
+# Then, append it
+echo "$1=$2" | sudo tee -a /etc/environment > /dev/null
+
+# Finally, remove blank lines
+sudo perl -ni -e 'print unless /^$/' /etc/environment
+
+
+# ----- Now ~/namespace_env -----
+
+if [[ -n $namespace ]]; then
+  # Kill the item, if it is already in the file
+  if [[ -f $home/${namespace}_env ]]; then
+    perl -ni -e "print unless /^export ${1}=/" $home/${namespace}_env
+  fi
+
+  # Then, append it
+  echo "export $1=\"$2\"" | sudo tee -a $home/${namespace}_env > /dev/null
+fi
+
+
+# ----- Now ~/namespace_env.json
+if which node > /dev/null ; then
+  jsaws-set-js-env "$@"
+fi

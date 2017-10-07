@@ -1,0 +1,5 @@
+#!/bin/bash -e
+
+ra invoke `fnn ~/dev 'lib/ec2/ec2\.js$'` "$@"
+
+

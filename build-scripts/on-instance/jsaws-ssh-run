@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+ip="$1"
+shift
+
+command="$1"
+shift
+
+[[ $# > 0 ]] && message="--message=$1"
+
+ra invoke `fnn ~/dev 'js-aws/lib/ssh\.js$'` sshRun --ip=${ip} --command="$command" "$message"
+

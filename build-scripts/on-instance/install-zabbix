@@ -1,0 +1,15 @@
+#!/bin/bash -e
+
+#
+# Starts to Install Zabbix
+#
+# See: https://www.zabbix.com/documentation/3.4/manual/installation/install_from_packages/debian_ubuntu
+#
+# It has instructions on how to setup the various parts
+#
+
+# Update apt DB
+curl -O 'http://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_3.4-1+xenial_all.deb'
+dpkg -i zabbix-release_3.4-1+xenial_all.deb
+sudo DEBIAN_FRONTEND=noninteractive apt-get update
+

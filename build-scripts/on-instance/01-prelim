@@ -40,21 +40,7 @@ if ! stat /tmp | egrep -i '^access:.+777'; then
   exit 253
 fi
 
-# ---------- Format and mount extra data drive -------------------
-if [[ -b /dev/xvdf && ! -d /data ]]; then
-
-  sudo mkfs.ext4 /dev/xvdf
-  echo '/dev/xvdf   /data    ext4  defaults,auto,comment=cloudconfig 0 2' | sudo tee -a /etc/fstab
-
-  sudo mkdir /data && sudo mount /data
-  sudo mkdir -p /data/data
-  sudo chown ${USER}:${USER} /data/data
-
-  # Now you can ln to the extra capacity
-  #ln -s  /data/data /home/${username}/data
-fi
-
-[[ -d ~/zz_packages ]] || mkdir -p ~/zz_packages
+#was: ---------- Format and mount extra data drive -------------------
 
 # ---------- Preliminaries -------------------
 if jsaws-build-block "prelim" "Setting up preliminary stuff"; then
@@ -65,14 +51,12 @@ if jsaws-build-block "prelim" "Setting up preliminary stuff"; then
     sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git curl  ntp build-essential autoconf libc6-dev automake libtool bison
 
-    # Make certain dirs available
-    sudo mkdir -p /var/log
-    sudo chown root:admin /var     && sudo chmod g+w /var
-    sudo chown root:admin /var/log && sudo chmod g+w /var/log
-
+    # Make a user-specific binary dir
     mkdir -p ~/local/bin
     sudo perl -pi -e "s/PATH=\"/PATH=\"\/home\/${username}\/local\/bin:/g" /etc/environment
     export PATH="${HOME}/local/bin:$PATH"
+
+    jsaws-set-env SERVERASSIST_MY_IP "$(curl -s 'http://169.254.169.254/latest/meta-data/local-ipv4')"
 
     touch ~/zz_packages/prelim
   fi
@@ -102,7 +86,11 @@ fi
 if jsaws-build-block "validate-github" "Validate with github"; then
   if ! git config --global user.email; then
 
+    # Github
     ssh -o "StrictHostKeyChecking no" git@github.com || true
+
+    # Github Enterprise
+    ssh -o "StrictHostKeyChecking no" git@github.azc.ext.hp.com || true
 
     git config --global user.email "yoshi.t.munchakoopas@hp.com"
     git config --global user.name "Yoshi T. Munchakoopas"
@@ -163,17 +151,19 @@ fi
 # ---------- Node-based utils -----------
 if jsaws-build-block "node-utils" "Node-based Utilities"; then
 
-  npm install -g cli-shezargs
-  npm install -g underscore-cli
-  npm install -g tap-difflet
-  npm install -g yaml-cli
-  npm install -g iponmap
+  yarn global add cli-shezargs
+  yarn global add underscore-cli
+  yarn global add run-anywhere
+  yarn global add serve
 
   jsaws-build-block "node-utils" "done"
 fi
 
 # ---------- First big apt-get ----------
 if jsaws-build-block "first-big-apt-get" "Big first apt-get"; then
+
+  # Add other repos
+  sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:adiscon/v8-stable
 
   # Install big, basic stuff
   sudo DEBIAN_FRONTEND=noninteractive apt-get update
@@ -182,12 +172,22 @@ if jsaws-build-block "first-big-apt-get" "Big first apt-get"; then
       libreadline6 git-core build-essential openssl nmap mercurial socat gawk libcurl4-openssl-dev ncurses-dev libncurses5-dev \
       libgdbm-dev libyaml-dev libffi-dev libreadline6-dev zlib1g zlib1g-dev libssl-dev autoconf libc6-dev automake libtool \
       bison subversion pkg-config libperl-dev liblzma-dev libpcre3 libpcre3-dev libgd-tools libsqlite3-dev sqlite3 libxml2-dev \
-      libxslt-dev libmysqlclient-dev cscope exuberant-ctags realpath unzip libcairo2 libcairo2-dev libjpeg-dev
+      libxslt-dev libmysqlclient-dev cscope exuberant-ctags realpath unzip libcairo2 libcairo2-dev libjpeg-dev rsyslog
 
   jsaws-build-block "first-big-apt-get" "done"
 
   # Reboot?
   check_reboot "big initial install"
+fi
+
+# ---------- rsyslog ----------
+if jsaws-build-block "rsyslog" "Fixing for logging"; then
+
+  # Turn on UDP inside rsyslog
+  sudo perl -pi -e 's/^#(.*ModLoad\s+imudp.*)$/$1/'    /etc/rsyslog.conf
+  sudo perl -pi -e 's/^#(.*UDPServerRun\s+514.*)$/$1/' /etc/rsyslog.conf
+
+  jsaws-build-block "rsyslog" "done"
 fi
 
 # ---------- Admin ----------
@@ -212,18 +212,34 @@ if env | egrep -i '_service=admin'; then
 
       mkdir -p ~/dev && cd $_
 
-      [[ -d sgsg         ]] || (git clone git@github.com:briancsparks/sg sgsg       && cd sgsg          && npm install --production    && npm link --production)
-      [[ -d js-cluster   ]] || (git clone git@github.com:briancsparks/js-cluster    && cd js-cluster    && npm install --production    && npm link --production)
-      [[ -d run-anywhere ]] || (git clone git@github.com:briancsparks/run-anywhere  && cd run-anywhere  && npm install --production    && npm link --production)
-      [[ -d js-aws       ]] || (git clone git@github.com:briancsparks/js-aws        && cd js-aws        && npm install --production    && npm link --production)
-      [[ -d mario-js     ]] || (git clone git@github.com:IPGPTP/mario-js            && cd mario-js      && npm install --production    && npm link --production)
-
-      git clone git@github.com:IPGPTP/mario_util            mario-util
+      [[ -d sgsg         ]] || (git clone git@github.com:briancsparks/sg sgsg       && cd sgsg                                        && npm install --production    && npm link --production)
+      [[ -d js-cluster   ]] || (git clone git@github.com:briancsparks/js-cluster    && cd js-cluster    && git checkout "no-mario"    && npm install --production    && npm link --production)
+      [[ -d run-anywhere ]] || (git clone git@github.com:briancsparks/run-anywhere  && cd run-anywhere                                && npm install --production    && npm link --production)
+      [[ -d js-aws       ]] || (git clone git@github.com:briancsparks/js-aws        && cd js-aws                                      && npm install --production    && npm link --production)
 
     fi
 
     jsaws-build-block "admin-repos" "done"
   fi
+fi
+
+#
+# Above here are mostly system utilities and such, below here are our own code. Hence,
+# at this point, the software that does the system level config is generally done. So,
+# we make some final fixups that should not get clobbered.
+#
+
+# ---------- Post fixups ----------
+if jsaws-build-block "post-fixups" "Post fixups"; then
+
+  # /var/log needs to have group write access
+  sudo chmod g+w /var
+  sudo chmod g+w /var/log
+
+  ls -l /
+  ls -l /var
+
+  jsaws-build-block "post-fixups" "done"
 fi
 
 # ---------- nginx ----------
@@ -284,6 +300,12 @@ if jsaws-build-block "build-nginx" "NGINX"; then
       # Make a link to the nginx binary from sbin
       test -f /usr/local/nginx/sbin/nginx && sudo ln -fs /usr/local/nginx/sbin/nginx /usr/sbin/nginx
 
+      # vim
+      if [ -d contrib/vim ]; then
+        mkdir -p $HOME/.vim/bundle/nginx
+        cp -r contrib/vim/* $HOME/.vim/bundle/nginx/
+      fi
+
       # Give ownership of logs dirs
       sudo mkdir -p /var/log/nginx
       sudo touch /var/log/nginx/access.log
@@ -307,6 +329,20 @@ if jsaws-build-block "build-nginx" "NGINX"; then
 fi
 
 
+
+## ---------- Format and mount extra data drive -------------------
+#if [[ -b /dev/xvdf && ! -d /data ]]; then
+#
+#  sudo mkfs.ext4 /dev/xvdf
+#  echo '/dev/xvdf   /data    ext4  defaults,auto,comment=cloudconfig 0 2' | sudo tee -a /etc/fstab
+#
+#  sudo mkdir /data && sudo mount /data
+#  sudo mkdir -p /data/data
+#  sudo chown ${USER}:${USER} /data/data
+#
+#  # Now you can ln to the extra capacity
+#  #ln -s  /data/data /home/${username}/data
+#fi
 
 
 

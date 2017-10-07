@@ -3,7 +3,13 @@
 eval "$(cli-shezargs $@)"
 
 if jsaws-build-block "node-utils2" "Node-based Utilities for platform"; then
-  npm install -g pm2
+
+  yarn global add tap-difflet
+  yarn global add yaml-cli
+  yarn global add iponmap
+
+  yarn global add pm2
+  (mkdir -p ~/dev/ && cd ~/dev/ && git clone git@github.com:briancsparks/pm2-js-cluster && cd pm2-js-cluster && npm install)
 
   jsaws-build-block "node-utils2" "done"
 fi

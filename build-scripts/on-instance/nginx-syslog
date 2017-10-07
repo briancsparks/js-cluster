@@ -1,0 +1,30 @@
+#!/bin/bash -e
+
+color="$SERVERASSIST_COLOR"
+stack="$SERVERASSIST_STACK"
+
+tmpfile="/tmp/60-serverassist.conf"
+
+cat > $tmpfile <<-EOF
+
+# :vim filetype=conf:
+
+module(load="imfile")
+module(load="builtin:omfile" dirCreateMode="0755" fileCreateMode="0644")
+module(load="builtin:omfwd")
+
+ruleset(name="ng_all_access_rs") {
+  action(type="omfwd" target="${SERVERASSIST_UTIL_IP}" port="10599" protocol="tcp")
+}
+
+EOF
+
+sudo egrep -o '/var/log/[^ ]*' /etc/nginx/nginx.conf | while read log; do
+
+  tag="$(echo ${color}-${stack}-$(basename $log .log) | tr -d '-')"
+
+  echo "input(type=\"imfile\" ruleset=\"ng_all_access_rs\" Facility=\"local7\" Tag=\"${tag}\" File=\"$log\")" >> $tmpfile
+
+
+done
+

@@ -1,0 +1,17 @@
+#!/bin/bash -e
+
+#
+# Installs Facebook's Watchman, to watch file changes
+#
+#   See also the Watchman manual about tuning inotify limits.
+#
+
+mkdir -p zz_packages/watchman && cd $_
+git clone https://github.com/facebook/watchman.git
+cd watchman
+git checkout v4.7.0
+./autogen.sh
+./configure
+make
+sudo make install
+

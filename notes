@@ -1,0 +1,5 @@
+
+This worked to have Mario servers in a SA cluster
+
+time ./build-servers --my-env=small --db=10.12.21.229 --util=10.12.21.4 --blue --services=netapp,cont --skip-relaunch --image-id=xenial2 --namespace=mario --stack=develop --class-b=15 --skip-ami
+

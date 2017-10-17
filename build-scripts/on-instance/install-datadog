@@ -9,7 +9,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-key adv --keyserver keyserver.ubuntu.com
 sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y datadog-agent
 
-sudo sh -c "sed 's/api_key:.*/api_key: 02c490b852119eb535abd71148285826/' /etc/dd-agent/datadog.conf.example > /etc/dd-agent/datadog.conf"
+sudo sh -c "sed 's/api_key:.*/api_key: $api_key/' /etc/dd-agent/datadog.conf.example > /etc/dd-agent/datadog.conf"
 
 if [[ -z $no_instance ]]; then
   [[ -n $short_instance_name ]] || die "Must provide --short-instance-name="

@@ -1,0 +1,28 @@
+#!/bin/bash -e
+
+eval "$(cli-shezargs $@)"
+
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https
+sudo sh -c "echo 'deb https://apt.datadoghq.com/ stable main' > /etc/apt/sources.list.d/datadog.list"
+sudo chmod +r /etc/apt/sources.list.d/*
+sudo DEBIAN_FRONTEND=noninteractive apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C7A7DA52
+sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y datadog-agent
+
+sudo sh -c "sed 's/api_key:.*/api_key: 02c490b852119eb535abd71148285826/' /etc/dd-agent/datadog.conf.example > /etc/dd-agent/datadog.conf"
+
+if [[ -z $no_instance ]]; then
+  [[ -n $short_instance_name ]] || die "Must provide --short-instance-name="
+  [[ -n $stack               ]] || die "Must provide --stack"
+
+  sudo perl -pi -e 's/^[# ]*[ ]*collect_ec2_tags:.*$/collect_ec2_tags: yes/'
+  sudo perl -pi -e "s/^[# ]*[ ]*hostname:.*$/hostname: ${short_instance_name}/"
+  sudo perl -pi -e "s/^[# ]*[ ]*tags:.*$/tags: env:${stack}/"
+  sudo perl -pi -e "s/^[# ]*[ ]*collect_instance_metadata:.*$/collect_instance_metadata: yes/"
+  sudo perl -pi -e "s/^[# ]*[ ]*statsd_metric_namespace:.*$/statsd_metric_namespace: mario/"
+fi
+
+if [[ -z $disabled ]]; then
+  sudo /etc/init.d/datadog-agent start
+fi
+

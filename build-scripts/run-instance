@@ -11,38 +11,50 @@ eval "$(cli-shezargs $@)"
 [[ -n $stack                  ]] || die "Need --stack="
 [[ -n $color                  ]] || die "Need --color="
 
+if [[ $service =~ ^admin ]]; then
+  [[ $stack =~ ^cluster ]] || die "admin server must be on cluster stack"
+fi
+
+if [[ $service =~ ^watchdog ]]; then
+  [[ $stack =~ ^cluster ]] || die "watchdog server must be on cluster stack"
+fi
+
 if [[ -n $project_id ]]; then
   [[ -n $service                ]] || die "Need --service= for a project lookup"
 
   config="/tmp/config-${as_pid}.json"
   ra invoke "$(fn ~/dev/ 'serverassist/ra-scripts/project\.js$')" projectInfoForInstance --project-id=sa --color="${color}" --stack="${stack}" --service="${service}" > "${config}"
 
-  if   [[ $stack =~ ^pub      ]]; then   config_key="$(jsaws-get $config '.awsProdKey')";  config_class_b="$(jsaws-get $config '.prodClassB')"
-  elif [[ $stack =~ ^prod     ]]; then   config_key="$(jsaws-get $config '.awsProdKey')";  config_class_b="$(jsaws-get $config '.prodClassB')"
-  elif [[ $stack =~ ^cluster  ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.clusterClassB')"
-  elif [[ $stack =~ ^test     ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.testClassB')"
-  elif [[ $stack =~ ^dev      ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.testClassB')"
-  elif [[ $stack =~ ^burn     ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.testClassB')"
+  if   [[ $stack =~ ^pub          ]]; then   config_key="$(jsaws-get $config '.awsProdKey')";  config_class_b="$(jsaws-get $config '.prodClassB')"
+  elif [[ $stack =~ ^prod         ]]; then   config_key="$(jsaws-get $config '.awsProdKey')";  config_class_b="$(jsaws-get $config '.prodClassB')"
+  elif [[ $stack =~ ^test         ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.testClassB')"
+  elif [[ $stack =~ ^dev          ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.testClassB')"
+  elif [[ $stack =~ ^burn         ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.testClassB')"
+  elif [[ $service =~ ^admin      ]]; then   config_key="$(jsaws-get $config '.awsHqKey')";    config_class_b="$(jsaws-get $config '.clusterClassB')"
+  elif [[ $service =~ ^watchdog   ]]; then   config_key="$(jsaws-get $config '.awsHqKey')";    config_class_b="$(jsaws-get $config '.clusterClassB')"
+  elif [[ $stack =~ ^cluster      ]]; then   config_key="$(jsaws-get $config '.awsDevKey')";   config_class_b="$(jsaws-get $config '.clusterClassB')"
   fi
 
-  if   [[ $service =~ ^web    ]]; then   config_class_d="10"
-  elif [[ $service =~ ^rip    ]]; then   config_class_d="16"
-  elif [[ $service =~ ^app    ]]; then   config_class_d="32"
-  elif [[ $service =~ ^netapp ]]; then   config_class_d="100"
-  elif [[ $service =~ ^cont   ]]; then   config_class_d="200"
-  elif [[ $service =~ ^util   ]]; then   config_class_d="4"
-  elif [[ $service =~ ^db     ]]; then   config_class_d="220"
+  if   [[ $service =~ ^web        ]]; then   config_class_d="10"
+  elif [[ $service =~ ^rip        ]]; then   config_class_d="16"
+  elif [[ $service =~ ^app        ]]; then   config_class_d="32"
+  elif [[ $service =~ ^netapp     ]]; then   config_class_d="100"
+  elif [[ $service =~ ^cont       ]]; then   config_class_d="200"
+  elif [[ $service =~ ^util       ]]; then   config_class_d="4"
+  elif [[ $service =~ ^db         ]]; then   config_class_d="220"
+  elif [[ $service =~ ^watchdog   ]]; then   config_class_d="190"
+  elif [[ $service =~ ^admin      ]]; then   config_class_d="250"
   fi
 
-  if   [[ $color == green     && $service =~ ^web   ]]; then   config_class_c="0"
-  elif [[ $color == blue      && $service =~ ^web   ]]; then   config_class_c="1"
-  elif [[ $color == teal      && $service =~ ^web   ]]; then   config_class_c="2"
-  elif [[ $color == yellow    && $service =~ ^web   ]]; then   config_class_c="3"
+  if   [[ $color == green         && $service =~ ^web   ]]; then   config_class_c="0"
+  elif [[ $color == blue          && $service =~ ^web   ]]; then   config_class_c="1"
+  elif [[ $color == teal          && $service =~ ^web   ]]; then   config_class_c="2"
+  elif [[ $color == yellow        && $service =~ ^web   ]]; then   config_class_c="3"
 
-  elif [[ $color == green     ]]; then   config_class_c="21"
-  elif [[ $color == blue      ]]; then   config_class_c="22"
-  elif [[ $color == teal      ]]; then   config_class_c="23"
-  elif [[ $color == yellow    ]]; then   config_class_c="24"
+  elif [[ $color == green         ]]; then   config_class_c="21"
+  elif [[ $color == blue          ]]; then   config_class_c="22"
+  elif [[ $color == teal          ]]; then   config_class_c="23"
+  elif [[ $color == yellow        ]]; then   config_class_c="24"
   fi
 
   [[ -z $key                ]] && key="$config_key"

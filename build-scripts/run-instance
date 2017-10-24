@@ -82,6 +82,8 @@ if [[ -z $image_id ]]; then
   bld_num="--build-number=$(cat /tmp/base-name-${as_pid}.json | underscore 'select' ".${service} .build" --outfmt=text)"
 fi
 
+[[ -n $xvdf                 ]] && run_instance_params="$run_instance_params --xvdf=$xvdf"
+
 ra invoke `fn $HOME/dev/ 'lib/ec2/ec2\.js$'` runInstanceFromAmi \
     --ip="${ip}" \
     --color="${color}" \
@@ -92,6 +94,7 @@ ra invoke `fn $HOME/dev/ 'lib/ec2/ec2\.js$'` runInstanceFromAmi \
     --util="${SERVERASSIST_UTIL_IP}" \
     --instance-type="${instance_type}" \
     --image-id="${image_id}" \
+    ${run_instance_params} \
     ${bld_num} \
     | tee /tmp/run-instance-from-ami-${service}-${as_pid}.json | underscore print --color
 

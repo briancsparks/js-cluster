@@ -1,10 +1,8 @@
 #!/bin/bash -e
 
+scripts_dir="$(realpath $(dirname $0))"
 
-sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:openjdk-r/ppa
-sudo DEBIAN_FRONTEND=noninteractive apt-get update
-sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y graphviz openjdk-7-jdk
+$scripts_dir/install-jdk --jdk7
 
 wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo DEBIAN_FRONTEND=noninteractive apt-key add -
 echo 'deb https://pkg.jenkins.io/debian-stable binary/' | sudo tee -a /etc/apt/sources.list
@@ -14,9 +12,33 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y jenkins
 
 sudo systemctl start jenkins
 
+## See https://issues.jenkins-ci.org/browse/JENKINS-23793 for Jenkins-crumb
+#echo "Edit /etc/default/jenkins and put --prefix=/ci/dashboard on the line that sets JENKINS_ARGS"
+#echo "     and add -Dhudson.security.csrf.requestfield=Jenkins-crumb to JAVA_ARGS"
+#echo " - jsaws-set-env SERVERASSIST_SERVICE jenkins"
+#echo " - jsaws-set-env SERVERASSIST_PROJECT ntl"
+#echo " - then log out and back in"
+#echo " - then restart:  sudo systemctl restart jenkins"
+
 sleep 2
 echo cat /var/lib/jenkins/secrets/initialAdminPassword
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
 echo "Jenkins should be listening on 8080"
+
+# When you clobber your access:
+#
+# Put one line: "2.0" into /var/lib/jenkins/jenkins.install.InstallUtil.lastExecVersion
+#   That file is owned by jenkins (like all the other files in /var/lib/jenkins)
+#     (This keeps the system from reverting the next change.)
+#
+# Open /var/lib/jenkins/config.xml
+#   Change useSecurity to false
+#   Clobber authorizationStrategy and securityRealm
+#
+# Restart Jenkins: sudo service jenkins restart
+#
+#
+#
+
 

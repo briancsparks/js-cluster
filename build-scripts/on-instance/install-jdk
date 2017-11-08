@@ -1,0 +1,16 @@
+#!/bin/bash -e
+
+eval $(cli-shezargs $@)
+
+if [[ -n $jdk7 ]]; then
+  sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:openjdk-r/ppa
+  mods="$mods openjdk-7-jdk"
+else
+  mods="$mods default-jdk"
+fi
+
+sudo DEBIAN_FRONTEND=noninteractive apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y graphviz "$mods"
+
+

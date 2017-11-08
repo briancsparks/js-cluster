@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+eval "$(cli-shezargs $@)"
+
+[[ -z $dir_name ]] && dir_name="data"
+
+if [[ -b /dev/xvdf && ! -d /data ]]; then
+
+  sudo mkfs.ext4 /dev/xvdf
+  echo '/dev/xvdf   /data    ext4  defaults,auto,comment=cloudconfig 0 2' | sudo tee -a /etc/fstab
+
+  sudo mkdir /data && sudo mount /data
+  sudo mkdir -p /data/data
+  sudo chown ${USER}:${USER} /data/${dir_name}
+
+  # ln to the extra capacity
+  #mkdir -p /home/${USER}/data
+  ln -s  /data/${dir_name} /home/${USER}
+fi
+

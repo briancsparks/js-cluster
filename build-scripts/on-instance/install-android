@@ -3,12 +3,30 @@
 eval "$(cli-shezargs $@)"
 
 
-sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:openjdk-r/ppa
+#sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:openjdk-r/ppa
 sudo DEBIAN_FRONTEND=noninteractive apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-7-jdk realpath zip unzip ant gradle lib32stdc++6 lib32z1
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y default-jdk lib32z1 realpath zip unzip ant gradle lib32stdc++6 lib32z1
 
 # TODO: someone on the Interwebs said to install libgl1-mesa-dev
+
+mkdir -p ~/android && cd $_
+aws s3 cp s3://mobilewebprint-deploy/buildout/packages/android-sdk-tools-linux-3859397.zip ./
+unzip android-sdk-tools-linux-3859397.zip
+rm android-sdk-tools-linux-3859397.zip
+jsaws-set-env ANDROID_HOME "$(pwd)"
+sudo perl -pi -e "s/PATH=\"/PATH=\"\/home\/${USER}\/android\/tools:/g" /etc/environment
+sudo perl -pi -e "s/PATH=\"/PATH=\"\/home\/${USER}\/android\/tools\/bin:/g" /etc/environment
+
+PATH="/home/${USER}/android/tools/bin:/home/${USER}/android/tools:${PATH}"
+
+# The --license option requires interaction
+echo "You will have to accept the licenses"
+sdkmanager --update
+sdkmanager "platforms;android-25" "build-tools;26.0.2" "extras;google;m2repository" "extras;android;m2repository" "cmake;3.6.4111459" "lldb;3.0" "ndk-bundle" "platform-tools" tools
+sdkmanager --licenses
+
+
 
 mkdir -p ~/zz_packages && cd $_
 aws s3 cp "s3://${http_bucket}/buildout/packages/android-sdk_r24.4.1-linux.tgz" ./

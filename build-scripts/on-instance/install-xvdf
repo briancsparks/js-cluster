@@ -10,7 +10,7 @@ if [[ -b /dev/xvdf && ! -d /data ]]; then
   echo '/dev/xvdf   /data    ext4  defaults,auto,comment=cloudconfig 0 2' | sudo tee -a /etc/fstab
 
   sudo mkdir /data && sudo mount /data
-  sudo mkdir -p /data/data
+  sudo mkdir -p /data/${dir_name}
   sudo chown ${USER}:${USER} /data/${dir_name}
 
   # ln to the extra capacity

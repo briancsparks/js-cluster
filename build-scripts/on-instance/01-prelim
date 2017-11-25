@@ -245,6 +245,12 @@ fi
 # ---------- nginx ----------
 if jsaws-build-block "build-nginx" "NGINX"; then
 
+  #
+  # THE guide to building Nginx
+  #
+  # https://www.nginx.com/resources/admin-guide/installing-nginx-open-source/
+  #
+
   if [[ -n $install_nginx ]]; then
 
     if ! which nginx > /dev/null; then
@@ -265,6 +271,10 @@ if jsaws-build-block "build-nginx" "NGINX"; then
       tar xzf "$(find ./ -maxdepth 1 -type f | egrep 'nginx.*\.tar\.gz$')"
 
       ln -fs "$(find ./ -maxdepth 1 -type d | egrep 'nginx')" nginx
+
+      # According to https://forum.nginx.org/read.php?2,256012,256064#msg-256064
+      # This is required on Mac to compile OpenSSL
+      #export KERNEL_BITS=64
 
       # This name clashes with the NGINX tarball
       git clone git@github.com:vkholodkov/nginx-eval-module.git

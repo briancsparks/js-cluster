@@ -18,6 +18,8 @@ if [[ $service =~ bastion ]]; then
   unset install_nginx
 fi
 
+[[ $service == web ]] && install_nessus="1"
+
 echo "================== $service Install nginx: $install_nginx ================================="
 
 # Which S3 bucket should we get things from?
@@ -188,6 +190,18 @@ if jsaws-build-block "rsyslog" "Fixing for logging"; then
   sudo perl -pi -e 's/^#(.*UDPServerRun\s+514.*)$/$1/' /etc/rsyslog.conf
 
   jsaws-build-block "rsyslog" "done"
+fi
+
+# ---------- Nessus ----------
+if [[ -n $install_nessus ]]; then
+  if jsaws-build-block "nessus" "Install Nessus Scanner"; then
+
+    cd ~/zz_packages
+    curl -s -O "https://s3.amazonaws.com/${http_bucket}/buildout/packages/NessusAgent-6.10.7-ubuntu1110_amd64.deb"
+    sudo dpkg -i "$(find ./ -maxdepth 1 -type f | egrep 'NessusAgent.*\.deb$')"
+
+    jsaws-build-block "nessus" "done"
+  fi
 fi
 
 # ---------- Admin ----------

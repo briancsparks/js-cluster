@@ -10,6 +10,13 @@ eval "$(cli-shezargs $@)"
 sudo chmod g+w /var
 sudo chmod g+w /var/log
 
+# ---------- Nessus ----------
+if [[ $SERVERASSIST_SERVICE == web ]]; then
+  if [[ -n $tenable_io_key ]]; then
+    sudo /opt/nessus_agent/sbin/nessuscli agent link --key="$tenable_io_key" --host=cloud.tenable.com --port=443 --groups=dagwood-prod --name="$(hostname)"
+    sudo service nessusagent start
+  fi
+fi
 
 # Turn on UDP inside rsyslog
 sudo perl -pi -e 's/^#(.*ModLoad\s+imudp.*)$/$1/'    /etc/rsyslog.conf

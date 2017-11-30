@@ -34,6 +34,11 @@ fi
 
 # -------------------- Startup Services ----------------------
 ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/${on_instance_build_dir}/on-instance/b01-start-from-snapshot" "--message=${service}-build"
-ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/${on_instance_build_dir}/on-instance/b02-start-services" "--message=${service}-build"
+
+if [[ $service == web ]]; then
+  ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/${on_instance_build_dir}/on-instance/b02-start-services" "--tenable-io-key=${TENABLE_IO_KEY} --message=${service}-build"
+else
+  ra invoke `fn ${script_dir}/../../ ssh\.js$` sshRun --ip=${ip} --command="./zz_packages/${on_instance_build_dir}/on-instance/b02-start-services" "--message=${service}-build"
+fi
 
 

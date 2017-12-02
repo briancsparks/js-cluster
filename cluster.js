@@ -36,11 +36,11 @@ lib._getServiceLocations = function(redis, namespace, name, callback) {
 
   // Get all the members of the set -- all the instances of the service
   return redis.smembers(key, function(keysErr, keys) {
-    if (keysErr)              { return callback(keysErr); }
-    if (sg.numKeys(keys) === 0)  { return callback(null, []); }
+    if (keysErr)                  { return callback(keysErr); }
+    if (sg.numKeys(keys) === 0)   { return callback(null, []); }
 
     return redis.mget(keys, function(err, res) {
-      return callback(err, _.compact(res));
+      return callback(err, _.compact(res), key);
     });
   });
 };
@@ -163,14 +163,14 @@ lib.ServiceLists = function(redisHost_, redisPort_) {
   };
 
   self.getOneServiceLocation = function(name, callback) {
-    return getServiceLocations(serviceListList, name, function(err, services) {
+    return getServiceLocations(serviceListList, name, function(err, services, key) {
       if (err) { return callback(err); }
 
       if (++index >= services.length) {
         index = 0;
       }
 
-      return callback(null, services[index]);
+      return callback(null, services[index], key);
     });
   };
 

@@ -68,14 +68,14 @@ var ServiceList = lib.ServiceList = function(namespace, redisHost_, redisPort_) 
   self.getServiceLocation = self.getServiceLocations;
 
   self.getOneServiceLocation = function(name, callback) {
-    return self.getServiceLocations(name, function(err, services) {
+    return self.getServiceLocations(name, function(err, services, key) {
       if (err) { return callback(err); }
 
       if (++index >= services.length) {
         index = 0;
       }
 
-      return callback(null, services[index]);
+      return callback(null, services[index], key);
     });
   };
 
@@ -84,7 +84,7 @@ var ServiceList = lib.ServiceList = function(namespace, redisHost_, redisPort_) 
 
   self.waitForOneServiceLocation = function(name, def, callback) {
     return sg.until((again, last, count, elapsed) => {
-      return self.getOneServiceLocation(name, (err, location) => {
+      return self.getOneServiceLocation(name, (err, location, key) => {
         if (err || !location) {
           console.error(`Waiting for ${name} service, elapsed: ${elapsed}`);
           if (elapsed < 30*minutes) { return again(5000); }
@@ -94,11 +94,11 @@ var ServiceList = lib.ServiceList = function(namespace, redisHost_, redisPort_) 
           return last(def);
         }
 
-        return last(location);
+        return last(location, key);
       });
 
-    }, function(location) {
-      return callback(null, location);
+    }, function(location, key) {
+      return callback(null, location, key);
     });
   };
 
@@ -113,17 +113,18 @@ var ServiceList = lib.ServiceList = function(namespace, redisHost_, redisPort_) 
 var Service = lib.Service = ServiceList;
 
 var getServiceLocations = lib.getServiceLocations = function(serviceListList, name, callback) {
-  var serviceLocations, error;
+  var serviceLocations, key, error;
 
   return sg.__each(serviceListList, function(serviceList, nextService) {
 
     // Once we have serviceLocations, do not need to look for more
     if (serviceLocations) { return nextService(); }
 
-    return serviceList.getServiceLocations(name, function(err, results) {
+    return serviceList.getServiceLocations(name, function(err, results, key_) {
       error = error || err;
       if (!err && results.length > 0) {
         serviceLocations = _.map(results, function(str) { return str.replace(/[/]$/g, ''); });
+        key              = key_;
       }
 
       return nextService();
@@ -131,7 +132,7 @@ var getServiceLocations = lib.getServiceLocations = function(serviceListList, na
 
   }, function() {
     if (error) { return callback(error); }
-    return callback(null, serviceLocations || []);
+    return callback(null, serviceLocations || [], key);
   });
 };
 
@@ -176,7 +177,7 @@ lib.ServiceLists = function(redisHost_, redisPort_) {
 
   self.waitForOneServiceLocation = function(name, def, callback) {
     return sg.until(function(again, last, count, elapsed) {
-      return self.getOneServiceLocation(name, function(err, location) {
+      return self.getOneServiceLocation(name, function(err, location, key) {
         if (!sg.ok(err, location)) {
           console.error(`Waiting for ${name} service, elapsed: ${elapsed}`);
           if (elapsed < 30*minutes)   { return again(5000); }
@@ -187,11 +188,11 @@ lib.ServiceLists = function(redisHost_, redisPort_) {
         }
 
         // Finally got it
-        return last(location);
+        return last(location, key);
       });
 
-    }, /*until:done*/ function(location) {
-      return callback(null, location);
+    }, /*until:done*/ function(location, key) {
+      return callback(null, location, key);
     });
   };
 

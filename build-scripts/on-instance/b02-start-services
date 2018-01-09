@@ -13,7 +13,7 @@ sudo chmod g+w /var/log
 # ---------- Nessus ----------
 if [[ $SERVERASSIST_SERVICE == web ]]; then
   if [[ -n $tenable_io_key ]]; then
-    sudo /opt/nessus_agent/sbin/nessuscli agent link --key="$tenable_io_key" --host=cloud.tenable.com --port=443 --groups=dagwood-prod --name="$(hostname)"
+    sudo /opt/nessus_agent/sbin/nessuscli agent link --key="$tenable_io_key" --host=cloud.tenable.com --port=443 --groups=mario-dev --name="$(hostname)"
     sudo service nessusagent start
   fi
 fi

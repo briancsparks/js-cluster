@@ -31,6 +31,8 @@ elif [[ -n $is_prod ]]; then
   http_bucket="${bucket_namespace}-deploy"
 fi
 
+jsaws-set-env SERVERASSIST_BUILDOUT_BUCKET "$http_bucket"
+
 
 # ---------- Nothing works without 777 /tmp ----------
 if ! stat /tmp | egrep -i '^access:.+777'; then

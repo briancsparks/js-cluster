@@ -1,6 +1,6 @@
 {
   "name": "js-cluster",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Cluster management in raw Node.js",
   "main": "cluster.js",
   "scripts": {

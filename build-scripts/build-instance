@@ -148,9 +148,6 @@ fi
 # -------------------- Startup Services ----------------------
 jsaws-ssh-run "$ip" "./zz_packages/build/on-instance/b01-start-from-snapshot" "${service}-build"
 
-if [[ $service == web ]]; then
-  jsaws-ssh-run "$ip" "./zz_packages/build/on-instance/b02-start-services" "${service}-build --tenable-io-key=${TENABLE_IO_KEY}"
-else
-  jsaws-ssh-run "$ip" "./zz_packages/build/on-instance/b02-start-services" "${service}-build"
-fi
+jsaws-ssh-run "$ip" "./zz_packages/build/on-instance/b02-start-services"      "${service}-build"
+
 

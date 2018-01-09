@@ -22,3 +22,8 @@ grep '^PATH' /etc/environment | sudo tee /etc/environment
 set_env NPM_CONFIG_PREFIX "$NPM_CONFIG_PREFIX"
 set_env NODE_PATH "$NODE_PATH"
 
+set_env SERVERASSIST_BUILDOUT_BUCKET    "$SERVERASSIST_BUILDOUT_BUCKET"
+
+echo "After pre-ss"
+sudo cat /etc/environment
+

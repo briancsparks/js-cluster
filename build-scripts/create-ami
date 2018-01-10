@@ -16,6 +16,20 @@ if [[ -z $skip_ami ]]; then
   aws ec2 create-tags --resources $image_id --tags "Key=readyFor,Value=test"
   [[ -n $base_name ]] && aws ec2 create-tags --resources $image_id --tags "Key=baseName,Value=${base_name}"
 
+  # Let the prod acct use this image
+  prod_acct_num="$(echo $JSAWS_AWS_ACCTS | egrep -o 'pub:[0-9]+' | cut -d':' -f2)"
+  if [[ -n $prod_acct_num ]]; then
+    echo aws ec2 modify-image-attribute --image-id "$image_id" --launch-permission "{\"Add\": [{\"UserId\":\"${prod_acct_num}\"}]}"
+    aws ec2 modify-image-attribute --image-id "$image_id" --launch-permission "{\"Add\": [{\"UserId\":\"${prod_acct_num}\"}]}"
+
+    snapshot_id="$(aws ec2 describe-images --image-ids "$image_id" | jq -r '.Images[0].BlockDeviceMappings[0].Ebs.SnapshotId')"
+    if [[ -n $snapshot_id ]]; then
+      echo aws ec2 modify-snapshot-attribute --snapshot-id "$snapshot_id"  --attribute createVolumePermission --operation-type add --user-ids "${prod_acct_num}"
+      aws ec2 modify-snapshot-attribute --snapshot-id "$snapshot_id"  --attribute createVolumePermission --operation-type add --user-ids "${prod_acct_num}"
+    fi
+  fi
+
+
   sleep 5
   wait_for_start $ip
 

@@ -139,9 +139,9 @@ if jsaws-build-block "nodejs" "Installing node.js"; then
     sudo perl -pi -e "s/PATH=\"/PATH=\"\/home\/${username}\/.npm-global\/bin:/g" /etc/environment
     export PATH="${NPM_CONFIG_PREFIX}/bin:$PATH"
 
-    # Put yarn bin at ~/local/bin
-    npm install -g yarn
-    yarn config set prefix $HOME/local
+#    # Put yarn bin at ~/local/bin
+#    npm install -g yarn
+#    yarn config set prefix $HOME/local
   fi
 
   echo $PATH
@@ -155,10 +155,7 @@ fi
 # ---------- Node-based utils -----------
 if jsaws-build-block "node-utils" "Node-based Utilities"; then
 
-  yarn global add cli-shezargs
-  yarn global add underscore-cli
-  yarn global add run-anywhere
-  yarn global add serve
+  npm install -g cli-shezargs underscore-cli run-anywhere serve
 
   jsaws-build-block "node-utils" "done"
 fi
@@ -196,6 +193,8 @@ fi
 
 # ---------- Admin ----------
 if env | egrep -i '_service=admin'; then
+
+  unset install_nginx
 
   # ---------- Ansible ----------
   if jsaws-build-block "ansible" "Installing ansible"; then

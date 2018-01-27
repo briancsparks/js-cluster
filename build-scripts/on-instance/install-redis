@@ -16,6 +16,9 @@ if jsaws-build-block "redis" "Install redis"; then
 
   cat redis.conf | sed "s/daemonize no/daemonize yes/g; s/^bind 127.*/bind $my_ip/g" | sudo tee /etc/redis.conf > /dev/null
 
+  echo -n "Setting transparent hugepages to: "
+  echo never | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
+
   jsaws-build-block "redis" "done"
 fi
 

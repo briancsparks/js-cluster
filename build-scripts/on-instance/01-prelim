@@ -122,7 +122,7 @@ if jsaws-build-block "nodejs" "Installing node.js"; then
     # Node.js
     curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
 
-    echo "deb https://deb.nodesource.com/node_6.x ${osversion} main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+    echo "deb https://deb.nodesource.com/node_8.x ${osversion} main" | sudo tee /etc/apt/sources.list.d/nodesource.list
     sudo DEBIAN_FRONTEND=noninteractive apt-get update
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
 

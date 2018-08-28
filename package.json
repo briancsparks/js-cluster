@@ -21,7 +21,7 @@
     "debug": "^2.6.3",
     "express": "^4.15.2",
     "redis": "^2.7.1",
-    "sgsg": "^0.9.14",
+    "sgsg": "^0.9.54",
     "socket.io": "^1.7.3",
     "socket.io-client": "^1.7.3",
     "socket.io-emitter": "^2.0.0",
